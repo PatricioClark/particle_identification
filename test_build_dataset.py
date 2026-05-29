@@ -23,7 +23,7 @@ N_LOAD     = 200   # max particles to load per sim
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--yaml", default="simuls_bernardo.yaml")
+    parser.add_argument("--yaml", default="simuls.yaml")
     args = parser.parse_args()
 
     t0 = time.time()

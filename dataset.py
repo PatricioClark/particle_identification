@@ -24,8 +24,10 @@ def _read_lag(path):
 
 
 def _glob_sorted(sim_path, quantity):
+    p = Path(sim_path)
+    search_dir = p / "outs" if (p / "outs").is_dir() else p
     return sorted(
-        Path(sim_path).glob(f"{quantity}.*.lag"),
+        search_dir.glob(f"{quantity}.*.lag"),
         key=lambda p: int(p.stem.split(".")[-1]),
     )
 
