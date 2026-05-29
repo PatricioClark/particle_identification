@@ -4,7 +4,7 @@ Usage
 -----
 python train_classifier.py [options]
 
-The script reads all simulations listed in simuls_bernardo.yaml, builds a
+The script reads all simulations listed in simuls.yaml, builds a
 labelled feature dataset, runs stratified k-fold cross-validation, prints
 a classification report, saves a confusion-matrix figure and a feature-
 importance figure, then fits a final model on all data and saves it.
@@ -28,7 +28,7 @@ from dataset import build_dataset
 def main():
     p = argparse.ArgumentParser(description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
-    p.add_argument("--yaml",        default="simuls_bernardo.yaml")
+    p.add_argument("--yaml",        default="simuls.yaml")
     p.add_argument("--batch-size",  type=int, default=500,
                    help="Particles per training sample (default: 500)")
     p.add_argument("--n-batches",   type=int, default=10,
