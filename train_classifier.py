@@ -1,13 +1,13 @@
-"""Train a Random Forest classifier on ensemble trajectory features.
+"""Train a Random Forest classifier on a pre-built feature dataset.
 
 Usage
 -----
 python train_classifier.py [options]
 
-The script reads all simulations listed in simuls.yaml, builds a
-labelled feature dataset, runs stratified k-fold cross-validation, prints
-a classification report, saves a confusion-matrix figure and a feature-
-importance figure, then fits a final model on all data and saves it.
+Loads a dataset produced by build_dataset.py, runs stratified k-fold
+cross-validation, prints a classification report, saves a confusion-matrix
+figure and a feature-importance figure, then fits a final model on all data
+and saves it.
 """
 
 import argparse
@@ -22,48 +22,33 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 import matplotlib.pyplot as plt
 
-from dataset import build_dataset
-
 
 def main():
     p = argparse.ArgumentParser(description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
-    p.add_argument("--yaml",        default="simuls.yaml")
-    p.add_argument("--batch-size",  type=int, default=500,
-                   help="Particles per training sample (default: 500)")
-    p.add_argument("--n-batches",   type=int, default=10,
-                   help="Training samples per simulation (default: 10)")
-    p.add_argument("--n-lags",      type=int, default=15,
-                   help="Lag points in feature vector (default: 15)")
-    p.add_argument("--n-load",      type=int, default=5000,
-                   help="Max particles loaded per simulation (default: 5000)")
-    p.add_argument("--n-trees",     type=int, default=300)
-    p.add_argument("--n-folds",     type=int, default=5)
-    p.add_argument("--output",      default="model.pkl",
+    p.add_argument("--dataset", default="dataset.pkl",
+                   help="Pre-built dataset produced by build_dataset.py (default: dataset.pkl)")
+    p.add_argument("--n-trees",  type=int, default=300)
+    p.add_argument("--n-folds",  type=int, default=5)
+    p.add_argument("--output",   default="model.pkl",
                    help="Path for saved model (default: model.pkl)")
-    p.add_argument("--seed",        type=int, default=42)
+    p.add_argument("--seed",     type=int, default=42)
     args = p.parse_args()
 
-    # ── Build dataset ─────────────────────────────────────────────────────────
-    print("Building dataset …")
-    X, y, feat_names, label_names = build_dataset(
-        args.yaml,
-        batch_size=args.batch_size,
-        n_batches=args.n_batches,
-        n_lags=args.n_lags,
-        n_load=args.n_load,
-        seed=args.seed,
-    )
+    # ── Load dataset ──────────────────────────────────────────────────────────
+    print(f"Loading dataset from {args.dataset} …")
+    ds          = joblib.load(args.dataset)
+    X           = ds["X"]
+    y           = ds["y"]
+    feat_names  = ds["feature_names"]
+    label_names = ds["label_names"]
+    n_lags      = ds["n_lags"]
+    batch_size  = ds["batch_size"]
 
     print(f"\nDataset: {X.shape[0]} samples × {X.shape[1]} features, "
           f"{len(label_names)} classes")
     for i, name in enumerate(label_names):
         print(f"  {i:2d}  {name}  ({(y == i).sum()} samples)")
-
-    # Replace any NaNs with column medians (can arise at very large lags)
-    col_medians = np.nanmedian(X, axis=0)
-    nan_locs    = np.isnan(X)
-    X[nan_locs] = col_medians[np.where(nan_locs)[1]]
 
     # ── Cross-validate ────────────────────────────────────────────────────────
     pipe = Pipeline([
@@ -125,8 +110,8 @@ def main():
         "pipeline":      pipe,
         "label_names":   label_names,
         "feature_names": feat_names,
-        "n_lags":        args.n_lags,
-        "batch_size":    args.batch_size,
+        "n_lags":        n_lags,
+        "batch_size":    batch_size,
     }
     joblib.dump(saved, args.output)
     print(f"Model saved → {args.output}")

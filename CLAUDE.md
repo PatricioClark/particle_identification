@@ -11,11 +11,17 @@ The GHOST simulator lives at `/home/clark/repos/GHOST`. Reference `.lag` files f
 ## Running the pipeline
 
 ```bash
-# Train a classifier on all simulations in the YAML
-python train_classifier.py --yaml simuls_bernardo.yaml
+# Step 1: build and save the feature dataset
+python build_dataset.py --yaml simuls.yaml --output dataset.pkl
 
-# Key options
-python train_classifier.py --batch-size 500 --n-batches 10 --n-lags 15 --n-load 5000 --n-trees 300 --output model.pkl
+# Key options for dataset generation
+python build_dataset.py --batch-size 500 --n-batches 10 --n-lags 15 --n-load 5000 --output dataset.pkl
+
+# Step 2: train a classifier on the saved dataset
+python train_classifier.py --dataset dataset.pkl --output model.pkl
+
+# Key options for training
+python train_classifier.py --dataset dataset.pkl --n-trees 300 --n-folds 5 --output model.pkl
 
 # Predict the model class for a new simulation directory
 python predict.py --model model.pkl --path /path/to/sim/dir
@@ -50,13 +56,13 @@ The pipeline has four layers:
 
 **2. Feature extraction** — `features.py`. A single feature vector summarises an *ensemble* (batch) of particles, not individual trajectories. Features: normalised VACF, MSD, 2nd- and 4th-order velocity structure functions (all at log-spaced lag indices), plus scalar velocity variance/kurtosis and acceleration variance/flatness. Feature length = `4 * n_lags + 4`.
 
-**3. Dataset construction** — `dataset.py`. `build_dataset()` is the top-level entry point. It probes all simulation directories, aligns them to the shortest common trajectory length, then calls `make_feature_matrix()` per simulation. Each training *sample* is one non-overlapping batch of `batch_size` particles — this mimics what you'd observe in an experiment. Labels are `"<MODEL>_St<st>"` strings mapped to integers.
+**3. Dataset construction** — `dataset.py` + `build_dataset.py`. `build_dataset()` in `dataset.py` is the core entry point: it probes all simulation directories, aligns them to the shortest common trajectory length, calls `make_feature_matrix()` per simulation, and imputes NaNs. `build_dataset.py` is the CLI wrapper that saves the result to a `.pkl` containing `X`, `y`, `feature_names`, `label_names`, `n_lags`, and `batch_size`. Each training *sample* is one non-overlapping batch of `batch_size` particles — this mimics what you'd observe in an experiment. Labels are `"<MODEL>_St<st>"` strings mapped to integers.
 
-**4. Model** — `train_classifier.py` / `predict.py`. A `sklearn` Pipeline of `StandardScaler → RandomForestClassifier`. Cross-validation is stratified k-fold. The saved `.pkl` bundles the pipeline, label names, feature names, `n_lags`, and `batch_size` so `predict.py` can reconstruct compatible lag arrays at inference time.
+**4. Model** — `train_classifier.py` / `predict.py`. Loads a pre-built dataset `.pkl` and trains a `sklearn` Pipeline of `StandardScaler → RandomForestClassifier`. Cross-validation is stratified k-fold. The saved model `.pkl` bundles the pipeline, label names, feature names, `n_lags`, and `batch_size` so `predict.py` can reconstruct compatible lag arrays at inference time.
 
 ## Simulation registry
 
-`simuls_bernardo.yaml` lists all simulations. Each entry has `parts.model` (LAG, MR, NLD, ONLD, BB, FAX) and `parts.st` (Stokes number). Data lives on remote scratch (`/share/scratch{8,12}/bespanol/`). `build_dataset()` silently skips directories that don't exist, so the script runs locally against whatever subset is mounted.
+`simuls.yaml` lists all simulations. Each entry has `parts.model` (LAG, MR, NLD, ONLD, BB, FAX) and `parts.st` (Stokes number). Data lives on remote scratch (`/share/scratch{8,12}/bespanol/`). `build_dataset()` silently skips directories that don't exist, so the script runs locally against whatever subset is mounted.
 
 Models in the dataset:
 - **LAG** — fluid tracers (St=0)
