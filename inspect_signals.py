@@ -1,16 +1,20 @@
 """Inspect ensemble statistics as a function of physical lag time.
 
-Loads each accessible simulation, computes VACF, MSD, S2, and S4 over a
-dense lag grid, and plots them against physical lag time.  A vertical dashed
-line marks the max lag currently used by the training pipeline (min_steps/2).
+Loads each accessible simulation in parallel (one MPI rank per simulation),
+computes VACF, MSD, S2, and S4 over a dense lag grid, and plots them against
+physical lag time on rank 0.  A vertical dashed line marks the max lag
+currently used by the training pipeline (min_steps/2).
 
 Usage
 -----
-python inspect_signals.py [--yaml simuls.yaml] [--n-particles 1000]
-                          [--n-lags 50] [--output inspect_signals.pdf]
+mpirun -n N python inspect_signals.py [--yaml simuls.yaml] [--n-particles 1000]
+                                       [--n-lags 50] [--output inspect_signals.pdf]
+
+N should be <= number of accessible simulations; extra ranks are idle.
 """
 
 import argparse
+import sys
 from pathlib import Path
 
 import matplotlib
@@ -19,9 +23,14 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 import numpy as np
 import yaml
+from mpi4py import MPI
 
 from dataset import probe_sim, load_simulation
 from features import make_lags, unwrap_positions, _vacf, _msd, _sf
+
+comm = MPI.COMM_WORLD
+rank = comm.Get_rank()
+size = comm.Get_size()
 
 
 def load_args():
@@ -69,51 +78,60 @@ def main():
     with open(args.yaml) as fh:
         sims = yaml.safe_load(fh)
 
-    # Pass 1: find min_steps across all accessible sims
-    n_steps_map = {}
-    for sim in sims:
-        path = sim["path"]
-        if not Path(path).is_dir():
-            continue
-        _, n_steps = probe_sim(path)
-        if n_steps > 0:
-            n_steps_map[path] = n_steps
+    # All ranks: filter to accessible sims (fast filesystem check)
+    accessible = [
+        s for s in sims
+        if Path(s["path"]).is_dir() and probe_sim(s["path"])[1] > 0
+    ]
 
-    if not n_steps_map:
-        raise RuntimeError("No accessible simulation directories found.")
+    if not accessible:
+        if rank == 0:
+            print("No accessible simulation directories found.", file=sys.stderr)
+        sys.exit(1)
 
-    min_steps = min(n_steps_map.values())
-    print(f"Trajectory lengths: min={min_steps}, max={max(n_steps_map.values())} steps")
+    # Round-robin: rank r handles accessible[r], accessible[r+size], …
+    my_sims = list(enumerate(accessible))[rank::size]
 
-    # Pass 2: compute statistics per simulation
-    rng     = np.random.default_rng(42)
-    results = {}
+    # All ranks compute min_steps independently — same filesystem view
+    min_steps = min(probe_sim(s["path"])[1] for s in accessible)
 
-    for sim in sims:
-        path  = sim["path"]
+    if rank == 0:
+        print(f"Accessible simulations: {len(accessible)}, "
+              f"MPI ranks: {size}, min_steps: {min_steps}")
+
+    # ── Pass 2: each rank computes stats for its simulations ──────────────────
+    local_results = []
+    for i, sim in my_sims:
         model = sim["parts"]["model"]
         st    = sim["parts"]["st"]
         label = f"{model}_St{st}"
-
-        if path not in n_steps_map:
-            print(f"  [skip] {label}")
-            continue
-
-        print(f"  computing {label} …")
-        stats = compute_stats(path, args.n_particles, args.n_lags,
+        rng   = np.random.default_rng(42 + i)
+        print(f"  [rank {rank}] computing {label} …")
+        stats = compute_stats(sim["path"], args.n_particles, args.n_lags,
                               max_steps=min_steps, rng=rng)
         if stats is not None:
-            results[label] = stats
+            local_results.append((label, stats))
+
+    # ── Gather to rank 0 ──────────────────────────────────────────────────────
+    all_results = comm.gather(local_results, root=0)
+
+    if rank != 0:
+        return
+
+    results = {
+        label: stats
+        for bucket in all_results
+        for label, stats in bucket
+    }
 
     if not results:
-        raise RuntimeError("No statistics computed.")
+        print("No statistics computed.", file=sys.stderr)
+        sys.exit(1)
 
-    # Vertical line: max lag used by the pipeline = min_steps/2 * dt
-    # Use dt from the first result (all sims share the same dt in this dataset)
     first = next(iter(results.values()))
     pipeline_max_lag_time = (min_steps // 2) * first["dt"]
 
-    # ── Plot ─────────────────────────────────────────────────────────────────
+    # ── Plot (rank 0 only) ────────────────────────────────────────────────────
     colors = plt.cm.tab10(np.linspace(0, 1, len(results)))
     panels = [
         ("vacf", "VACF",  False, False),
