@@ -30,10 +30,12 @@ def main():
     p = argparse.ArgumentParser(description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--yaml",       default="simuls.yaml")
-    p.add_argument("--batch-size", type=int, default=500)
-    p.add_argument("--n-batches",  type=int, default=10)
+    p.add_argument("--batch-size", type=int, default=5000)
+    p.add_argument("--n-batches",  type=int, default=100)
     p.add_argument("--n-lags",     type=int, default=15)
-    p.add_argument("--n-load",     type=int, default=5000)
+    p.add_argument("--max-steps",  type=int, default=None,
+                   help="Truncate trajectories to this many steps. "
+                        "Defaults to the shortest trajectory across all sims.")
     p.add_argument("--seed",       type=int, default=42)
     p.add_argument("--output",     default="dataset.pkl")
     args = p.parse_args()
@@ -53,7 +55,7 @@ def main():
         sys.exit(1)
 
     # min_steps and lags — deterministic, same on all ranks
-    min_steps = min(probe_sim(s["path"])[1] for _, s in accessible)
+    min_steps = args.max_steps or min(probe_sim(s["path"])[1] for _, s in accessible)
     effective_steps = min_steps - 1
     lags = make_lags(effective_steps, args.n_lags)
 
@@ -83,7 +85,7 @@ def main():
             sim["path"], lags,
             batch_size=args.batch_size,
             n_batches=args.n_batches,
-            n_load=args.n_load,
+            n_load=args.n_batches * args.batch_size,
             max_steps=min_steps,
             seed=args.seed + i,
         )
