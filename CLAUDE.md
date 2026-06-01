@@ -11,11 +11,12 @@ The GHOST simulator lives at `/home/clark/repos/GHOST`. Reference `.lag` files f
 ## Running the pipeline
 
 ```bash
-# Step 1: build and save the feature dataset
-python build_dataset.py --yaml simuls.yaml --output dataset.pkl
+# Step 1: build and save the feature dataset (MPI-parallel, one rank per sim)
+mpirun -n N python build_dataset.py --yaml simuls.yaml --output dataset.pkl
 
 # Key options for dataset generation
-python build_dataset.py --batch-size 500 --n-batches 10 --n-lags 15 --n-load 5000 --output dataset.pkl
+mpirun -n N python build_dataset.py --batch-size 5000 --n-batches 100 --n-lags 15 \
+    --max-steps 400 --output dataset.pkl
 
 # Step 2: train a classifier on the saved dataset
 python train_classifier.py --dataset dataset.pkl --output model.pkl
@@ -26,16 +27,22 @@ python train_classifier.py --dataset dataset.pkl --n-trees 300 --n-folds 5 --out
 # Predict the model class for a new simulation directory
 python predict.py --model model.pkl --path /path/to/sim/dir
 
+# Inspect ensemble statistics vs physical lag time (MPI-parallel)
+mpirun -n N python inspect_signals.py --yaml simuls.yaml --output inspect_signals.pdf
+
+# Exploratory data analysis on a pre-built dataset.pkl
+python eda.py --dataset dataset.pkl --output eda.pdf
+
 # Inspect a single particle's trajectory
-python plot_particle_timeseries.py --path /path/to/sim --quantity xlg --particle 42
-python plot_particle_timeseries.py --path /path/to/sim --quantity vip --particle 0 --component mag
+python test/plot_particle_timeseries.py --path /path/to/sim --quantity xlg --particle 42
+python test/plot_particle_timeseries.py --path /path/to/sim --quantity vip --particle 0 --component mag
 
 # Blind A/B visual comparison between two simulations
-python blindtest_timeseries.py --path1 /share/scratch8/bespanol/MR/St2 --path2 /share/scratch8/bespanol/LAG/St0
+python test/blindtest_timeseries.py --path1 /share/scratch8/bespanol/MR/St2 --path2 /share/scratch8/bespanol/LAG/St0
 
 # Inspect .lag files directly
-python read_lag.py                  # reads all *.lag in current dir
-python read_lag.py vip.00000148.lag
+python test/read_lag.py                  # reads all *.lag in current dir
+python test/read_lag.py vip.00000148.lag
 ```
 
 ## .lag binary format
@@ -52,17 +59,17 @@ Always read with `dtype=np.float32`. The data block reshapes to `(3, N)` (rows =
 
 The pipeline has four layers:
 
-**1. I/O** — `read_lag.py` (standalone) and the `_read_lag`/`_load_quantity`/`load_simulation` functions inside `dataset.py`. Both implement the same format; `dataset.py`'s version is used for bulk loading with particle index selection.
+**1. I/O** — `test/read_lag.py` (standalone) and the `_read_lag`/`_load_quantity`/`load_simulation` functions inside `dataset.py`. Both implement the same format; `dataset.py`'s version is used for bulk loading with particle index selection.
 
 **2. Feature extraction** — `features.py`. A single feature vector summarises an *ensemble* (batch) of particles, not individual trajectories. Features: normalised VACF, MSD, 2nd- and 4th-order velocity structure functions (all at log-spaced lag indices), plus scalar velocity variance/kurtosis and acceleration variance/flatness. Feature length = `4 * n_lags + 4`.
 
-**3. Dataset construction** — `dataset.py` + `build_dataset.py`. `build_dataset()` in `dataset.py` is the core entry point: it probes all simulation directories, aligns them to the shortest common trajectory length, calls `make_feature_matrix()` per simulation, and imputes NaNs. `build_dataset.py` is the CLI wrapper that saves the result to a `.pkl` containing `X`, `y`, `feature_names`, `label_names`, `n_lags`, and `batch_size`. Each training *sample* is one non-overlapping batch of `batch_size` particles — this mimics what you'd observe in an experiment. Labels are `"<MODEL>_St<st>"` strings mapped to integers.
+**3. Dataset construction** — `dataset.py` + `build_dataset.py`. `build_dataset.py` is the MPI-parallel CLI: it distributes simulations round-robin across ranks, calls `make_feature_matrix()` (from `dataset.py`) per simulation, then rank 0 gathers, imputes NaNs, and saves a `.pkl` containing `X`, `y`, `feature_names`, `label_names`, `n_lags`, and `batch_size`. The serial `build_dataset()` function in `dataset.py` still exists as a programmatic entry point. Each training *sample* is one non-overlapping batch of `batch_size` particles. Labels are `"<MODEL>_St<st>"` strings mapped to integers.
 
 **4. Model** — `train_classifier.py` / `predict.py`. Loads a pre-built dataset `.pkl` and trains a `sklearn` Pipeline of `StandardScaler → RandomForestClassifier`. Cross-validation is stratified k-fold. The saved model `.pkl` bundles the pipeline, label names, feature names, `n_lags`, and `batch_size` so `predict.py` can reconstruct compatible lag arrays at inference time.
 
 ## Simulation registry
 
-`simuls.yaml` lists all simulations. Each entry has `parts.model` (LAG, MR, NLD, ONLD, BB, FAX) and `parts.st` (Stokes number). Data lives on remote scratch (`/share/scratch{8,12}/bespanol/`). `build_dataset()` silently skips directories that don't exist, so the script runs locally against whatever subset is mounted.
+`simuls.yaml` lists all simulations. Each entry has `parts.model` (LAG, MR, NLD, ONLD, BB, FAX) and `parts.st` (Stokes number). Data lives on remote scratch (`/share/scratch{8,12}/bespanol/`). Both `build_dataset.py` and `inspect_signals.py` silently skip directories that don't exist, so scripts run locally against whatever subset is mounted.
 
 Models in the dataset:
 - **LAG** — fluid tracers (St=0)
@@ -75,6 +82,8 @@ Models in the dataset:
 ## Key design decisions
 
 - Features are ensemble statistics, not per-particle time series, so the classifier is invariant to particle labelling and can handle variable particle counts.
-- Lag indices are log-spaced (via `make_lags`) and capped at `n_steps // 2` to avoid biased estimators at long lags. All simulations are truncated to the shortest available trajectory length before lags are derived.
+- Lag indices are log-spaced (via `make_lags`) and span from 1 to `n_steps // 2`. The selection is evenly spread across the full unique integer range — not just the smallest values — to capture both short and long timescale behaviour.
+- `--max-steps` in `build_dataset.py` lets you truncate trajectories to a known convergence point (use `inspect_signals.py` to find it). If omitted, the shortest trajectory across accessible sims is used.
 - Positions need periodic-boundary unwrapping (`unwrap_positions`) before computing MSD; velocities do not.
 - `batch_size` must match between training and inference; it is stored in the `.pkl` for this reason.
+- MPI parallelism in `build_dataset.py` and `inspect_signals.py` assigns simulations round-robin across ranks so any number of ranks works. `label_map` is built deterministically from YAML order on every rank to ensure consistent integer label assignments.
