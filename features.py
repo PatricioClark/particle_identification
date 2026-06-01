@@ -30,15 +30,19 @@ def make_lags(n_steps, n_lags):
             f"Trajectory too short: n_steps={n_steps} gives max_lag={max_lag} "
             f"but n_lags={n_lags}. Use fewer lags or longer trajectories."
         )
-    # Log-spaced candidates; 4× oversampling ensures enough unique integers
-    raw = np.round(np.logspace(0, np.log10(max_lag), n_lags * 4)).astype(int)
-    raw = np.clip(raw, 1, max_lag)
-    unique = list(np.unique(raw))
-    if len(unique) < n_lags:
-        # Fill gaps with smallest missing integers
-        missing = [i for i in range(1, max_lag + 1) if i not in set(unique)]
-        unique = sorted(unique + missing[: n_lags - len(unique)])
-    return np.array(unique[:n_lags], dtype=int)
+    # Generate a dense log-spaced candidate set, deduplicate, then pick
+    # n_lags evenly-spread indices so the selection spans 1…max_lag.
+    raw = np.unique(
+        np.clip(
+            np.round(np.logspace(0, np.log10(max_lag), n_lags * 4)).astype(int),
+            1, max_lag,
+        )
+    )
+    if len(raw) < n_lags:
+        missing = [i for i in range(1, max_lag + 1) if i not in set(raw)]
+        raw = np.array(sorted(raw.tolist() + missing[: n_lags - len(raw)]))
+    idx = np.round(np.linspace(0, len(raw) - 1, n_lags)).astype(int)
+    return raw[idx]
 
 
 def unwrap_positions(pos, box=_BOX):
