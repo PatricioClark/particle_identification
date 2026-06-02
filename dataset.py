@@ -64,7 +64,7 @@ def _load_quantity(sim_path, quantity, idxs, max_steps=None):
 # ── Simulation loader ─────────────────────────────────────────────────────────
 
 def load_simulation(sim_path, idxs, max_steps=None):
-    """Load xlg and vip for selected particles.
+    """Load xlg and vip (or vlg for LAG tracers) for selected particles.
 
     Returns
     -------
@@ -78,7 +78,12 @@ def load_simulation(sim_path, idxs, max_steps=None):
 
     _, vel = _load_quantity(sim_path, "vip", idxs, max_steps)
     if vel is None:
-        raise FileNotFoundError(f"No vip.*.lag files found in {sim_path}")
+        _, vel = _load_quantity(sim_path, "vlg", idxs, max_steps)
+        if vel is None:
+            raise FileNotFoundError(f"No vip.*.lag or vlg.*.lag files found in {sim_path}")
+        print(f"    velocity source: vlg (fluid tracer)")
+    else:
+        print(f"    velocity source: vip (inertial particle)")
 
     return times, pos, vel
 
