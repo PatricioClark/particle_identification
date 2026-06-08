@@ -36,6 +36,9 @@ def main():
     p.add_argument("--max-steps",  type=int, default=None,
                    help="Truncate trajectories to this many steps. "
                         "Defaults to the shortest trajectory across all sims.")
+    p.add_argument("--no-time-augment", dest="time_augment",
+                   action="store_false", default=True,
+                   help="Disable per-particle random time offsets (on by default).")
     p.add_argument("--seed",       type=int, default=42)
     p.add_argument("--output",     default="dataset.pkl")
     args = p.parse_args()
@@ -61,7 +64,8 @@ def main():
 
     if rank == 0:
         print(f"Accessible simulations: {len(accessible)}, MPI ranks: {size}")
-        print(f"min_steps={min_steps}, effective_steps={effective_steps}")
+        print(f"window_size={min_steps}, effective_steps={effective_steps}")
+        print(f"Time augmentation: {'on' if args.time_augment else 'off'}")
         print(f"Lag indices ({args.n_lags}): {lags}\n")
 
     # label_map — built deterministically from accessible sims in YAML order
@@ -86,7 +90,8 @@ def main():
             batch_size=args.batch_size,
             n_batches=args.n_batches,
             n_load=args.n_batches * args.batch_size,
-            max_steps=min_steps,
+            max_steps=None if args.time_augment else min_steps,
+            window_size=min_steps if args.time_augment else None,
             seed=args.seed + i,
         )
         if X_block.shape[0] == 0:
@@ -128,6 +133,7 @@ def main():
             "label_names":   label_names,
             "n_lags":        args.n_lags,
             "batch_size":    args.batch_size,
+            "window_size":   min_steps,
         },
         args.output,
     )

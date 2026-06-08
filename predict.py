@@ -41,6 +41,7 @@ def predict_directory(model_path, sim_path, batch_size=500, n_batches=5,
     pipe        = saved["pipeline"]
     label_names = saved["label_names"]
     n_lags      = saved.get("n_lags", 15)
+    window_size = saved.get("window_size", None)
 
     rng     = np.random.default_rng(seed)
     n_total, _ = probe_sim(sim_path)
@@ -64,15 +65,27 @@ def predict_directory(model_path, sim_path, batch_size=500, n_batches=5,
 
     times, pos, vel = load_simulation(sim_path, idxs)
     dt = float(np.diff(times).mean()) if len(times) > 1 else 1.0
+    T  = pos.shape[2]
 
-    # Build lag array that matches what the model was trained with
+    # Reconstruct lags using the same window_size as training
     from features import make_lags
-    lags = make_lags(pos.shape[2], n_lags)
+    lag_steps = (window_size - 1) if window_size is not None else T
+    lags = make_lags(lag_steps, n_lags)
+
+    do_offsets = window_size is not None and T > window_size
 
     feats = []
     for b in range(n_batches_actual):
         sl = slice(b * batch_size, (b + 1) * batch_size)
-        f, _ = extract_features(pos[sl], vel[sl], dt, lags)
+        if do_offsets:
+            offsets = rng.integers(0, T - window_size + 1, size=batch_size)
+            t_idx   = offsets[:, None] + np.arange(window_size)[None, :]
+            t_idx3d = np.broadcast_to(t_idx[:, np.newaxis, :], (batch_size, 3, window_size))
+            p = np.take_along_axis(pos[sl], t_idx3d, axis=2)
+            v = np.take_along_axis(vel[sl], t_idx3d, axis=2)
+        else:
+            p, v = pos[sl], vel[sl]
+        f, _ = extract_features(p, v, dt, lags)
         feats.append(f)
 
     X = np.array(feats, dtype=np.float64)

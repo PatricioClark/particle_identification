@@ -91,11 +91,15 @@ def load_simulation(sim_path, idxs, max_steps=None):
 # ── Feature-matrix builder for one simulation ─────────────────────────────────
 
 def make_feature_matrix(sim_path, lags, batch_size=500, n_batches=10,
-                        n_load=5000, max_steps=None, seed=0):
+                        n_load=5000, max_steps=None, window_size=None, seed=0):
     """Compute (n_batches_actual × n_features) feature matrix for one sim.
 
     Particles are split into non-overlapping batches of batch_size to avoid
     within-sample correlation between training examples.
+
+    When window_size is provided and the loaded trajectory is longer, each
+    particle in a batch gets an independent random time offset, so different
+    temporal windows contribute to the ensemble statistics.
 
     Returns
     -------
@@ -120,11 +124,22 @@ def make_feature_matrix(sim_path, lags, batch_size=500, n_batches=10,
 
     times, pos, vel = load_simulation(sim_path, idxs, max_steps=max_steps)
     dt = float(np.diff(times).mean()) if len(times) > 1 else 1.0
+    T  = pos.shape[2]
+
+    do_offsets = window_size is not None and T > window_size
 
     rows, names = [], []
     for b in range(n_batches_actual):
-        sl   = slice(b * batch_size, (b + 1) * batch_size)
-        feat, names = extract_features(pos[sl], vel[sl], dt, lags)
+        sl = slice(b * batch_size, (b + 1) * batch_size)
+        if do_offsets:
+            offsets = rng.integers(0, T - window_size + 1, size=batch_size)
+            t_idx   = offsets[:, None] + np.arange(window_size)[None, :]  # (B, W)
+            t_idx3d = np.broadcast_to(t_idx[:, np.newaxis, :], (batch_size, 3, window_size))
+            p = np.take_along_axis(pos[sl], t_idx3d, axis=2)
+            v = np.take_along_axis(vel[sl], t_idx3d, axis=2)
+        else:
+            p, v = pos[sl], vel[sl]
+        feat, names = extract_features(p, v, dt, lags)
         rows.append(feat)
 
     return np.array(rows, dtype=np.float64), names
@@ -133,17 +148,18 @@ def make_feature_matrix(sim_path, lags, batch_size=500, n_batches=10,
 # ── Full dataset builder ──────────────────────────────────────────────────────
 
 def build_dataset(yaml_path, batch_size=500, n_batches=10, n_lags=15,
-                  n_load=5000, seed=42):
+                  n_load=5000, seed=42, time_augment=True):
     """Build (X, y, feature_names, label_names) from all sims in the YAML.
 
     Parameters
     ----------
-    yaml_path  : path to simuls_bernardo.yaml
-    batch_size : particles per training sample
-    n_batches  : max training samples per simulation
-    n_lags     : number of lag points in the feature vector
-    n_load     : max particles to load from each simulation
-    seed       : random seed
+    yaml_path    : path to simuls_bernardo.yaml
+    batch_size   : particles per training sample
+    n_batches    : max training samples per simulation
+    n_lags       : number of lag points in the feature vector
+    n_load       : max particles to load from each simulation
+    seed         : random seed
+    time_augment : if True, apply per-particle random time offsets
 
     Returns
     -------
@@ -151,11 +167,12 @@ def build_dataset(yaml_path, batch_size=500, n_batches=10, n_lags=15,
     y            : (n_samples,) int
     feature_names: list[str]
     label_names  : list[str]  — label_names[i] is the class for y==i
+    window_size  : int — trajectory window used for feature computation
     """
     with open(yaml_path) as fh:
         sims = yaml.safe_load(fh)
 
-    # ── Pass 1: probe trajectory lengths to pick a common max_steps ──────────
+    # ── Pass 1: probe trajectory lengths to pick a common window_size ────────
     n_steps_per_sim = {}
     for sim in sims:
         path = sim["path"]
@@ -171,7 +188,7 @@ def build_dataset(yaml_path, batch_size=500, n_batches=10, n_lags=15,
     min_steps = min(n_steps_per_sim.values())
     print(f"Trajectory lengths: min={min_steps}, "
           f"max={max(n_steps_per_sim.values())} steps across {len(n_steps_per_sim)} sims")
-    print(f"Using max_steps={min_steps} for consistency.\n")
+    print(f"Using window_size={min_steps} for consistency.\n")
 
     # Derive velocity from xlg costs 1 step; be conservative
     effective_steps = min_steps - 1
@@ -203,7 +220,8 @@ def build_dataset(yaml_path, batch_size=500, n_batches=10, n_lags=15,
             batch_size=batch_size,
             n_batches=n_batches,
             n_load=n_load,
-            max_steps=min_steps,
+            max_steps=None if time_augment else min_steps,
+            window_size=min_steps if time_augment else None,
             seed=seed + i,
         )
         if X_block.shape[0] == 0:
@@ -217,4 +235,4 @@ def build_dataset(yaml_path, batch_size=500, n_batches=10, n_lags=15,
     X = np.vstack(X_blocks)
     y = np.concatenate(y_blocks)
     label_names = [k for k, _ in sorted(label_map.items(), key=lambda kv: kv[1])]
-    return X, y, feature_names, label_names
+    return X, y, feature_names, label_names, min_steps

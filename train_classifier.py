@@ -44,6 +44,7 @@ def main():
     label_names = ds["label_names"]
     n_lags      = ds["n_lags"]
     batch_size  = ds["batch_size"]
+    window_size = ds.get("window_size", None)
 
     print(f"\nDataset: {X.shape[0]} samples × {X.shape[1]} features, "
           f"{len(label_names)} classes")
@@ -112,6 +113,7 @@ def main():
         "feature_names": feat_names,
         "n_lags":        n_lags,
         "batch_size":    batch_size,
+        "window_size":   window_size,
     }
     joblib.dump(saved, args.output)
     print(f"Model saved → {args.output}")
