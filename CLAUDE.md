@@ -8,6 +8,8 @@ Given an ensemble of inertial particle trajectories from a GHOST turbulence simu
 
 The GHOST simulator lives at `/home/clark/repos/GHOST`. Reference `.lag` files for local testing are in this directory (`MR/St2/`, `MR/St8-89/`, and the root-level `*.lag` files).
 
+**The simulation data is not available on this machine.** `/share/scratch*` paths do not and will not exist locally. Scripts are developed and tested here; data lives on the cluster.
+
 ## Running the pipeline
 
 ```bash
