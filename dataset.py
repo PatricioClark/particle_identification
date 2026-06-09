@@ -54,6 +54,8 @@ def _load_quantity(sim_path, quantity, idxs, max_steps=None):
 
     times, frames = [], []
     for f in files:
+        if f.stat().st_size == 0:
+            continue
         t, data = _read_lag(f)
         times.append(t)
         frames.append(data[:, idxs].T.astype(np.float32))  # (n_p, 3)
@@ -126,12 +128,10 @@ def make_feature_matrix(sim_path, lags, batch_size=500, n_batches=10,
     dt = float(np.diff(times).mean()) if len(times) > 1 else 1.0
     T  = pos.shape[2]
 
-    do_offsets = window_size is not None and T > window_size
-
     rows, names = [], []
     for b in range(n_batches_actual):
         sl = slice(b * batch_size, (b + 1) * batch_size)
-        if do_offsets:
+        if window_size is not None and T > window_size:
             offsets = rng.integers(0, T - window_size + 1, size=batch_size)
             t_idx   = offsets[:, None] + np.arange(window_size)[None, :]  # (B, W)
             t_idx3d = np.broadcast_to(t_idx[:, np.newaxis, :], (batch_size, 3, window_size))
