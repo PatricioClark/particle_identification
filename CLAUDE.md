@@ -13,12 +13,22 @@ The GHOST simulator lives at `/home/clark/repos/GHOST`. Reference `.lag` files f
 ## Running the pipeline
 
 ```bash
-# Step 1: build and save the feature dataset (MPI-parallel, one rank per sim)
-mpirun -n N python build_dataset.py --yaml simuls.yaml --output dataset.pkl
+# Step 1: build and save the feature dataset (MPI-parallel, sharded + checkpointed)
+mpirun -n N python build_dataset.py --yaml simuls.yaml \
+    --checkpoint-dir ckpt --output dataset.pkl
 
-# Key options for dataset generation
-mpirun -n N python build_dataset.py --batch-size 5000 --n-batches 100 --n-lags 15 \
-    --max-steps 400 --output dataset.pkl
+# Key options for dataset generation. Total samples/sim = n-shards-per-sim * batches-per-shard.
+mpirun -n N python build_dataset.py --batch-size 5000 --batches-per-shard 100 \
+    --n-shards-per-sim 1 --n-load 50000 --n-lags 15 --max-steps 400 \
+    --checkpoint-dir ckpt --output dataset.pkl
+
+# Resume after a wall-time kill: re-run the SAME command — finished shards are skipped.
+# Add more samples: re-run with a larger --n-shards-per-sim into the same --checkpoint-dir.
+# Stitch existing checkpoints without recomputing:
+python build_dataset.py --checkpoint-dir ckpt --output dataset.pkl --assemble-only
+
+# Merge independently-built datasets into one (reconciles per-dataset label encodings)
+python merge_datasets.py a.pkl b.pkl [c.pkl ...] --output merged.pkl
 
 # Step 2: train a classifier on the saved dataset
 python train_classifier.py --dataset dataset.pkl --output model.pkl
@@ -65,7 +75,9 @@ The pipeline has four layers:
 
 **2. Feature extraction** — `features.py`. A single feature vector summarises an *ensemble* (batch) of particles, not individual trajectories. Features: normalised VACF, MSD, 2nd- and 4th-order velocity structure functions (all at log-spaced lag indices), plus scalar velocity variance/kurtosis and acceleration variance/flatness. Feature length = `4 * n_lags + 4`.
 
-**3. Dataset construction** — `dataset.py` + `build_dataset.py`. `build_dataset.py` is the MPI-parallel CLI: it distributes simulations round-robin across ranks, calls `make_feature_matrix()` (from `dataset.py`) per simulation, then rank 0 gathers, imputes NaNs, and saves a `.pkl` containing `X`, `y`, `feature_names`, `label_names`, `n_lags`, and `batch_size`. The serial `build_dataset()` function in `dataset.py` still exists as a programmatic entry point. Each training *sample* is one non-overlapping batch of `batch_size` particles. Labels are `"<MODEL>_St<st>"` strings mapped to integers.
+**3. Dataset construction** — `dataset.py` + `build_dataset.py`. The unit of work is a **shard**: one `(simulation, shard-index)` pair that calls `make_feature_matrix()` to load a particle pool *once* and emit `--batches-per-shard` feature rows. `build_dataset.py` flattens all shards across all sims, distributes them round-robin across MPI ranks (so ranks stay busy even when sims < ranks), and each shard **writes its own checkpoint** (`{label}__sim{i}__shard{j}.pkl`) atomically (temp + `os.replace`) as soon as it finishes. A shard whose checkpoint already exists is **skipped**, which is how resume-after-wall-time-kill works. When the shards are done, rank 0 `assemble()`s every checkpoint in `--checkpoint-dir` into the final `.pkl` (`X`, `y`, `feature_names`, `label_names`, `n_lags`, `batch_size`, `window_size`), imputing NaNs at that step; `--assemble-only` runs just the stitch. The serial `build_dataset()` function in `dataset.py` still exists as a programmatic entry point. Each training *sample* is one batch of `batch_size` particles drawn at random from the loaded pool — batches may overlap, which is what lets one pool load yield arbitrarily many samples. Labels are `"<MODEL>_St<st>"` strings mapped to integers.
+
+`merge_datasets.py` stitches together datasets built in separate runs. Because each `.pkl`'s `y` is an integer index into *its own* `label_names`, it cannot raw-concatenate: it checks feature-space compatibility (`feature_names`, `n_lags`, `batch_size`, `window_size`), builds a union label list, and remaps every `y` into that union space before stacking. This is the robust way to add data — it operates on finished products and sidesteps the checkpoint/YAML-index coupling below.
 
 **4. Model** — `train_classifier.py` / `predict.py`. Loads a pre-built dataset `.pkl` and trains a `sklearn` Pipeline of `StandardScaler → RandomForestClassifier`. Cross-validation is stratified k-fold. The saved model `.pkl` bundles the pipeline, label names, feature names, `n_lags`, and `batch_size` so `predict.py` can reconstruct compatible lag arrays at inference time.
 
@@ -88,4 +100,7 @@ Models in the dataset:
 - `--max-steps` in `build_dataset.py` lets you truncate trajectories to a known convergence point (use `inspect_signals.py` to find it). If omitted, the shortest trajectory across accessible sims is used.
 - Positions need periodic-boundary unwrapping (`unwrap_positions`) before computing MSD; velocities do not.
 - `batch_size` must match between training and inference; it is stored in the `.pkl` for this reason.
-- MPI parallelism in `build_dataset.py` and `inspect_signals.py` assigns simulations round-robin across ranks so any number of ranks works. `label_map` is built deterministically from YAML order on every rank to ensure consistent integer label assignments.
+- MPI parallelism in `build_dataset.py` and `inspect_signals.py` assigns work round-robin across ranks so any number of ranks works. `label_map` is built deterministically from YAML order on every rank to ensure consistent integer label assignments.
+- **Sharding/checkpointing exists to survive cluster wall-time limits.** The checkpoint is at the *shard* level (one pool load), not per batch, because the expensive, reusable unit of work is the trajectory read — resuming a half-done shard would have to reload the trajectory anyway, and per-batch files would flood the cluster FS with tiny inodes. `--batches-per-shard` is the granularity dial: smaller = finer checkpoints but more redundant reads; larger = fewer reads amortised over more rows. Per-shard seeds are `SeedSequence([seed, yaml_i, shard_j])`, reproducible and independent of rank count, so a new shard index always yields fresh (non-duplicate) samples.
+- `--n-shards-per-sim > 1` splits one sim across ranks. Because each `.lag` file holds *all* particles and is read whole regardless of how many are selected, this **re-reads the trajectory per shard** — only worth it when feature compute, not I/O, is the wall-time bottleneck.
+- **Checkpoint identity is `(label, yaml_i)` and `assemble()` globs the whole `--checkpoint-dir`.** It does not encode the sim's path or validate param consistency across shards. So reusing a checkpoint dir is only safe if you append sims at the *end* of the YAML (never reorder/insert/remove — that shifts `yaml_i` and leaves stale files that get double-counted) and pin `--max-steps` (so `min_steps`→lags/`window_size` don't drift between runs). When in doubt, use a fresh checkpoint dir, or merge finished `.pkl`s with `merge_datasets.py` instead.

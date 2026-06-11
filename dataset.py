@@ -92,10 +92,13 @@ def load_simulation(sim_path, idxs, max_steps=None):
 
 def make_feature_matrix(sim_path, lags, batch_size=500, n_batches=10,
                         n_load=5000, max_steps=None, window_size=None, seed=0):
-    """Compute (n_batches_actual × n_features) feature matrix for one sim.
+    """Compute (n_batches × n_features) feature matrix for one sim.
 
-    Particles are split into non-overlapping batches of batch_size to avoid
-    within-sample correlation between training examples.
+    A pool of up to n_load particles is loaded once, then each batch is an
+    independent random subsample of batch_size particles drawn from that pool.
+    Batches may overlap; with a pool much larger than batch_size the overlap is
+    small. Decoupling the batch draw from the pool size lets a single load yield
+    arbitrarily many ensemble samples, which is what makes sharding cheap.
 
     When window_size is provided and the loaded trajectory is longer, each
     particle in a batch gets an independent random time offset, so different
@@ -103,7 +106,7 @@ def make_feature_matrix(sim_path, lags, batch_size=500, n_batches=10,
 
     Returns
     -------
-    X     : (n_batches_actual, n_features) float64
+    X     : (n_batches, n_features) float64
     names : list[str]
     """
     rng     = np.random.default_rng(seed)
@@ -111,34 +114,31 @@ def make_feature_matrix(sim_path, lags, batch_size=500, n_batches=10,
     if n_total == 0:
         return np.empty((0, 0)), []
 
-    n_avail          = min(n_load, n_total)
-    n_batches_actual = min(n_batches, n_avail // batch_size)
-    n_need           = n_batches_actual * batch_size
-
-    if n_batches_actual == 0:
+    pool_size = min(n_load, n_total)
+    if pool_size < batch_size:
         print(f"    [warn] not enough particles for even one batch in {sim_path}")
         return np.empty((0, 0)), []
 
-    idxs = rng.choice(n_total, size=n_need, replace=False)
-    print(f"    loading {n_need} particles → {n_batches_actual} batches")
+    pool_idxs = rng.choice(n_total, size=pool_size, replace=False)
+    print(f"    loading pool of {pool_size} particles → {n_batches} batches")
 
-    times, pos, vel = load_simulation(sim_path, idxs, max_steps=max_steps)
+    times, pos, vel = load_simulation(sim_path, pool_idxs, max_steps=max_steps)
     dt = float(np.diff(times).mean()) if len(times) > 1 else 1.0
     T  = pos.shape[2]
 
     do_offsets = window_size is not None and T > window_size
 
     rows, names = [], []
-    for b in range(n_batches_actual):
-        sl = slice(b * batch_size, (b + 1) * batch_size)
+    for _ in range(n_batches):
+        sel = rng.choice(pool_size, size=batch_size, replace=False)
         if do_offsets:
             offsets = rng.integers(0, T - window_size + 1, size=batch_size)
             t_idx   = offsets[:, None] + np.arange(window_size)[None, :]  # (B, W)
             t_idx3d = np.broadcast_to(t_idx[:, np.newaxis, :], (batch_size, 3, window_size))
-            p = np.take_along_axis(pos[sl], t_idx3d, axis=2)
-            v = np.take_along_axis(vel[sl], t_idx3d, axis=2)
+            p = np.take_along_axis(pos[sel], t_idx3d, axis=2)
+            v = np.take_along_axis(vel[sel], t_idx3d, axis=2)
         else:
-            p, v = pos[sl], vel[sl]
+            p, v = pos[sel], vel[sel]
         feat, names = extract_features(p, v, dt, lags)
         rows.append(feat)
 
