@@ -33,6 +33,9 @@ def main():
     p.add_argument("--output",   default="model.pkl",
                    help="Path for saved model (default: model.pkl)")
     p.add_argument("--seed",     type=int, default=42)
+    p.add_argument("--drop-features", nargs="*", default=[], metavar="NAME",
+                   help="Feature names to exclude before training "
+                        "(e.g. --drop-features acc_flatness s4_l00)")
     args = p.parse_args()
 
     # ── Load dataset ──────────────────────────────────────────────────────────
@@ -48,6 +51,18 @@ def main():
 
     print(f"\nDataset: {X.shape[0]} samples × {X.shape[1]} features, "
           f"{len(label_names)} classes")
+
+    # ── Drop requested features ───────────────────────────────────────────────
+    if args.drop_features:
+        drop_set  = set(args.drop_features)
+        not_found = drop_set - set(feat_names)
+        if not_found:
+            print(f"[warn] --drop-features: not found in dataset: {sorted(not_found)}")
+        keep       = [i for i, n in enumerate(feat_names) if n not in drop_set]
+        dropped    = [n for n in feat_names if n in drop_set]
+        X          = X[:, keep]
+        feat_names = [feat_names[i] for i in keep]
+        print(f"Dropped {len(dropped)} features: {dropped}")
     for i, name in enumerate(label_names):
         print(f"  {i:2d}  {name}  ({(y == i).sum()} samples)")
 

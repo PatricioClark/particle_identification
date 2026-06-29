@@ -37,11 +37,12 @@ def predict_directory(model_path, sim_path, batch_size=500, n_batches=5,
         probs       — {label: probability} for all classes
         batch_preds — per-batch predicted labels
     """
-    saved       = joblib.load(model_path)
-    pipe        = saved["pipeline"]
-    label_names = saved["label_names"]
-    n_lags      = saved.get("n_lags", 15)
-    window_size = saved.get("window_size", None)
+    saved            = joblib.load(model_path)
+    pipe             = saved["pipeline"]
+    label_names      = saved["label_names"]
+    n_lags           = saved.get("n_lags", 15)
+    window_size      = saved.get("window_size", None)
+    model_feat_names = saved.get("feature_names", None)
 
     rng     = np.random.default_rng(seed)
     n_total, _ = probe_sim(sim_path)
@@ -85,10 +86,19 @@ def predict_directory(model_path, sim_path, batch_size=500, n_batches=5,
             v = np.take_along_axis(vel[sl], t_idx3d, axis=2)
         else:
             p, v = pos[sl], vel[sl]
-        f, _ = extract_features(p, v, dt, lags)
+        f, all_names = extract_features(p, v, dt, lags)
         feats.append(f)
 
     X = np.array(feats, dtype=np.float64)
+
+    # Drop features the model was not trained on (e.g. removed via --drop-features)
+    if model_feat_names is not None and list(model_feat_names) != list(all_names):
+        name_to_idx = {n: i for i, n in enumerate(all_names)}
+        missing = [n for n in model_feat_names if n not in name_to_idx]
+        if missing:
+            raise ValueError(f"Model expects features not found in data: {missing}")
+        col_idx = [name_to_idx[n] for n in model_feat_names]
+        X = X[:, col_idx]
     col_medians = np.nanmedian(X, axis=0)
     nan_locs    = np.isnan(X)
     X[nan_locs] = col_medians[np.where(nan_locs)[1]]
