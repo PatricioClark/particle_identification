@@ -1,0 +1,240 @@
+\documentclass[11pt]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[spanish]{babel}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{hyperref}
+
+\title{Turbulencia y modelos de partículas inerciales}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+\section{Escalas de la turbulencia}
+
+Consideramos un flujo turbulento homogéneo e isótropo, solución de las
+ecuaciones de Navier-Stokes incompresibles
+\begin{equation}
+  \nabla \cdot \mathbf{u} = 0, \qquad
+  \frac{D\mathbf{u}}{Dt} \equiv \partial_t \mathbf{u} + (\mathbf{u}\cdot\nabla)\mathbf{u}
+  = -\frac{1}{\rho}\nabla p + \nu \nabla^2 \mathbf{u},
+\end{equation}
+donde $\nu$ es la viscosidad cinemática y $\rho$ la densidad del fluido. La
+turbulencia se caracteriza por una amplia separación de escalas: la energía
+se inyecta a la escala grande y es transferida, sin disipación apreciable,
+a través de un rango inercial de escalas cada vez más pequeñas (la cascada
+de Richardson-Kolmogorov) hasta llegar a las escalas donde la viscosidad
+finalmente disipa la energía en calor.
+
+\subsection{Escala integral y tiempo de giro grande}
+
+La intensidad de las fluctuaciones de velocidad se mide con la velocidad
+cuadrática media $u_{\rm rms} = \langle u_1^2\rangle^{1/2}$ (por
+componente). La tasa media de disipación de energía cinética por unidad de
+masa es
+\begin{equation}
+  \varepsilon = \nu \left\langle \mathrm{tr}\!\left(\mathbb{A}^{\mathsf{T}}\mathbb{A}\right)\right\rangle,
+  \qquad A_{ij} = \frac{\partial u_i}{\partial x_j}.
+\end{equation}
+La escala integral $L$ es la escala espacial más grande del sistema, a la
+cual se inyecta la energía:
+\begin{equation}
+  L = \frac{u_{\rm rms}^3}{\varepsilon}.
+\end{equation}
+El tiempo característico de las estructuras de mayor escala (el
+\emph{tiempo de giro grande}, o \emph{large-eddy turnover time}) es
+\begin{equation}
+  \tau_L = \frac{L}{u_{\rm rms}} = \frac{u_{\rm rms}^2}{\varepsilon}.
+\end{equation}
+
+\subsection{Rango inercial y microescala de Taylor}
+
+En el rango inercial, $\eta \ll \ell \ll L$, las diferencias de velocidad
+entre puntos separados una distancia $\ell$ siguen el escaleo de
+Kolmogorov (K41):
+\begin{equation}
+  u_\ell \sim (\varepsilon \ell)^{1/3},
+  \qquad
+  \tau_\ell = \frac{\ell}{u_\ell} \sim \varepsilon^{-1/3}\ell^{2/3}.
+\end{equation}
+La intensidad de la turbulencia suele cuantificarse con el número de
+Reynolds basado en la microescala de Taylor $\lambda$,
+\begin{equation}
+  \lambda = \left(\frac{15\,\nu}{\varepsilon}\right)^{1/2} u_{\rm rms},
+  \qquad
+  \mathrm{Re}_\lambda = \frac{u_{\rm rms}\,\lambda}{\nu}.
+\end{equation}
+
+\subsection{Escalas de Kolmogorov}
+
+En el extremo disipativo del rango inercial, la viscosidad se vuelve
+dominante y detiene la cascada. Las escalas de Kolmogorov se construyen
+dimensionalmente a partir de $\nu$ y $\varepsilon$, los únicos parámetros
+relevantes a esa escala:
+\begin{equation}
+  \eta = \left(\frac{\nu^3}{\varepsilon}\right)^{1/4}, \qquad
+  \tau_\eta = \left(\frac{\nu}{\varepsilon}\right)^{1/2}, \qquad
+  u_\eta = (\nu\varepsilon)^{1/4}.
+\end{equation}
+$\eta$ es la escala espacial por debajo de la cual la disipación viscosa
+domina, $\tau_\eta$ es el tiempo de giro asociado a esa escala, y $u_\eta$
+la velocidad característica correspondiente (nótese que $\eta = u_\eta \tau_\eta$
+y que $\tau_\eta$ coincide con la extrapolación de $\tau_\ell$ del rango
+inercial hasta $\ell=\eta$).
+
+El tiempo de Kolmogorov $\tau_\eta$ es la escala temporal de referencia
+para caracterizar la inercia de una partícula suspendida en el flujo: el
+número de Stokes se define como
+\begin{equation}
+  \mathrm{St} = \frac{\tau_p}{\tau_\eta},
+\end{equation}
+donde $\tau_p$ es el tiempo de respuesta de la partícula (Sección
+\ref{sec:particulas}). $\mathrm{St}\to 0$ corresponde a una partícula que
+sigue el flujo como un trazador; $\mathrm{St}$ finito da lugar a
+desacoplamiento inercial, muestreo preferencial y clustering.
+
+\section{Modelos de partículas}
+\label{sec:particulas}
+
+Cada partícula inercial se caracteriza por su tiempo de respuesta o tiempo
+de Stokes $\tau_p = a^2/(3\nu)$ (con $a$ el radio de la partícula), que
+mide cuán rápido relaja su velocidad $\mathbf{v}(t)$ hacia la velocidad
+del fluido $\mathbf{u}(\mathbf{x}_p,t)$ visto en su posición. Los distintos
+modelos de arrastre difieren en qué términos de la ecuación de
+Maxey-Riley completa se retienen. A continuación se presentan, en orden
+creciente de complejidad, los modelos usados en este proyecto (etiquetas
+de \texttt{simuls.yaml} entre paréntesis).
+
+\subsection{Trazador fluido (\texttt{LAG})}
+
+En el límite $\mathrm{St}\to 0$ la partícula no tiene inercia y sigue
+exactamente el flujo:
+\begin{equation}
+  \dot{\mathbf{x}}_p = \mathbf{v}(t) = \mathbf{u}(\mathbf{x}_p,t).
+\end{equation}
+
+\subsection{Partícula pesada ingenua / arrastre de Stokes lineal}
+
+El modelo más simple para una partícula pesada retiene únicamente el
+arrastre de Stokes lineal (Angriman et al. 2020, ec. 10):
+\begin{equation}
+  \frac{d\mathbf{x}_p}{dt} = \mathbf{v}(t), \qquad
+  \frac{d\mathbf{v}}{dt} = \frac{1}{\tau_p}\left[\mathbf{u}(\mathbf{x}_p,t) - \mathbf{v}\right].
+\end{equation}
+Es válido para partículas pequeñas y pesadas ($\rho_p \gg \rho_f$), donde
+el arrastre domina sobre el gradiente de presión, la masa añadida y la
+historia.
+
+\subsection{Maxey-Riley completo (\texttt{MR})}
+
+Cuando la densidad de la partícula es comparable a la del fluido, deben
+retenerse además el término de gradiente de presión / masa añadida y el de
+flotación. Siguiendo Angriman et al. (2020, ec. 9):
+\begin{equation}
+  \frac{d\mathbf{v}}{dt} = \frac{1}{T_p}\left[\mathbf{u}(\mathbf{x}_p,t)-\mathbf{v}\right]
+  + \frac{3}{2}\frac{\gamma}{1+\gamma/2}\frac{D\mathbf{u}(\mathbf{x}_p,t)}{Dt}
+  + \frac{1-\gamma}{1+\gamma/2}\,\mathbf{g},
+\end{equation}
+con $\gamma = \rho_f/\rho_p$ el cociente de densidades fluido-partícula y
+$T_p$ el tiempo de Stokes definido de forma análoga a $\tau_p$. En GHOST
+$\gamma$ aparece también dentro del número de Reynolds de la partícula
+pero se mantiene siempre en $1$: lo único que se varía entre simulaciones
+es el radio $a$ (y por lo tanto $\mathrm{St}$).
+
+Sin el término de historia (Basset-Boussinesq), la ecuación de
+Maxey-Riley-Gatignol para una partícula neutralmente flotante se reduce a
+(Español et al. 2025, ec. 2.6):
+\begin{equation}
+  \frac{d\mathbf{v}}{dt} = \frac{1}{\tau_p}\left[\mathbf{u}(\mathbf{x},t)-\mathbf{v}(t)\right]
+  + \frac{D\mathbf{u}(\mathbf{x},t)}{Dt}.
+  \label{eq:mr-gatignol}
+\end{equation}
+Esta forma —arrastre lineal más el término de aceleración del fluido
+$D\mathbf{u}/Dt$— es la base sobre la que se construyen los modelos de
+arrastre no lineal a continuación.
+
+\subsection{Arrastre no lineal (\texttt{NLD}, \texttt{ONLD})}
+
+Para números de Reynolds de partícula $\mathrm{Re}_p$ moderados
+($1 \lesssim \mathrm{Re}_p \lesssim 40$), el arrastre de Stokes lineal deja
+de ser válido y se reemplaza por una corrección tipo Schiller-Naumann.
+Only nonlinear drag (\texttt{ONLD}; Español et al. 2025, ec. 2.7):
+\begin{equation}
+  \frac{d\mathbf{v}}{dt} = \frac{1+0.15\,\mathrm{Re}_p^{0.687}}{\tau_p}
+  \left[\mathbf{u}(\mathbf{x},t)-\mathbf{v}(t)\right],
+  \qquad
+  \mathrm{Re}_p = \frac{(18\,\tau_p/\nu)^{1/2}\,|\mathbf{u}(\mathbf{x},t)-\mathbf{v}(t)|}{1}.
+\end{equation}
+\texttt{NLD} agrega a esta misma corrección de arrastre no lineal el
+término de aceleración del fluido $D\mathbf{u}/Dt$ de la ecuación
+\eqref{eq:mr-gatignol}, es decir, reemplaza el arrastre lineal de esa
+ecuación por el arrastre no lineal de arriba. En el segundo set de
+simulaciones utilizado en este proyecto \texttt{NLD} y \texttt{ONLD}
+coinciden (sin término de aceleración); en el primer set, \texttt{NLD}
+incluía ese término extra.
+
+\subsection{Término de historia de Basset-Boussinesq (\texttt{BB})}
+
+La forma más completa de la ecuación de Maxey-Riley agrega, a los
+términos anteriores, la fuerza de historia: la respuesta viscosa retardada
+del fluido a los cambios pasados de la velocidad relativa
+$\mathbf{v}-\mathbf{u}$. Siguiendo la formulación de fuerza hidrodinámica
+de Maxey \& Riley (1983) (ver también Bec et al. 2024, ec. 3),
+\begin{align}
+  \frac{4}{3}\pi a^3 \rho_p \frac{d\mathbf{v}}{dt}
+  &= \frac{4}{3}\pi a^3 \rho_f \frac{D\mathbf{u}}{Dt}
+  - 6\pi\nu\rho_f a\left[\mathbf{v}-\mathbf{u}(\mathbf{x}_p,t)\right]
+  - \frac{4}{3}\pi a^3 (\rho_p-\rho_f)\,\mathbf{g} \nonumber\\
+  &\quad - \frac{2}{3}\pi a^3 \rho_f \frac{d}{dt}\left[\mathbf{v}-\mathbf{u}(\mathbf{x}_p,t)\right]
+  - 6a^2 \rho_f \sqrt{\pi\nu} \int_{-\infty}^{t}
+    \frac{1}{\sqrt{t-s}}\,\frac{d}{ds}\left[\mathbf{v}-\mathbf{u}(\mathbf{x}_p,s)\right] ds.
+  \label{eq:bb}
+\end{align}
+El último término, la integral de Basset-Boussinesq, depende de toda la
+historia pasada de la aceleración relativa partícula-fluido, pesada por un
+núcleo $\propto (t-s)^{-1/2}$: es una fuerza de memoria, no markoviana, que
+distingue a \texttt{BB} de \texttt{MR} (donde este término se descarta,
+como se verifica explícitamente en Español et al. 2025 que produce
+resultados similares al omitirlo para partículas neutralmente flotantes).
+
+\subsection{Corrección de Faxén (\texttt{FAX})}
+
+Cuando el tamaño de la partícula $a$ no es despreciable frente a la escala
+de curvatura del flujo no perturbado, deben agregarse correcciones de
+Faxén: términos proporcionales al laplaciano de la velocidad del fluido,
+evaluados en el centro de la partícula, que corrigen tanto el arrastre de
+Stokes como el término de gradiente de presión. Para el arrastre en
+régimen de Stokes estacionario (Maxey \& Riley 1983, ec. 7),
+\begin{equation}
+  \mathbf{F} = 6\pi a \mu \left\{\mathbf{u}(\mathbf{x}_p,t) - \mathbf{v}(t)\right\}
+  + \mu\pi a^3 \left(\nabla^2 \mathbf{u}\right)_{\mathbf{x}_p},
+\end{equation}
+donde el segundo término es la corrección de Faxén al orden más bajo.
+Maxey \& Riley (1983) derivan además la corrección de Faxén análoga para
+el flujo de Stokes no estacionario, que debe añadirse consistentemente al
+término de masa añadida / gradiente de presión. Estas correcciones son de
+orden $(a/\eta)^2$ y por lo tanto solo son relevantes cuando la partícula
+deja de ser puntual respecto de la escala de Kolmogorov; \texttt{FAX}
+agrega estos términos de curvatura a la ecuación de \texttt{MR}.
+
+\subsection{Resumen}
+
+\begin{center}
+\begin{tabular}{ll}
+\hline
+Etiqueta & Términos retenidos respecto de Maxey-Riley completo \\
+\hline
+\texttt{LAG}  & ninguno: $\mathbf{v}=\mathbf{u}$ (trazador, $\mathrm{St}=0$) \\
+\texttt{MR}   & arrastre de Stokes + masa añadida/gradiente de presión + flotación \\
+\texttt{NLD}  & arrastre no lineal + término de aceleración $D\mathbf{u}/Dt$ \\
+\texttt{ONLD} & arrastre no lineal solamente \\
+\texttt{BB}   & \texttt{MR} + integral de historia de Basset-Boussinesq \\
+\texttt{FAX}  & \texttt{MR} + corrección de Faxén (curvatura, $\nabla^2\mathbf{u}$) \\
+\hline
+\end{tabular}
+\end{center}
+
+\end{document}
