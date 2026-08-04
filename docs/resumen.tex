@@ -31,23 +31,34 @@ finalmente disipa la energía en calor.
 
 \subsection{Escala integral y tiempo de giro grande}
 
-La intensidad de las fluctuaciones de velocidad se mide con la velocidad
-cuadrática media $u_{\rm rms} = \langle u_1^2\rangle^{1/2}$ (por
-componente). La tasa media de disipación de energía cinética por unidad de
-masa es
+La intensidad de las fluctuaciones de velocidad se mide con la energía
+cinética media por unidad de masa
 \begin{equation}
-  \varepsilon = \nu \left\langle \mathrm{tr}\!\left(\mathbb{A}^{\mathsf{T}}\mathbb{A}\right)\right\rangle,
-  \qquad A_{ij} = \frac{\partial u_i}{\partial x_j}.
+  E = \frac{1}{2}\langle v^2\rangle
 \end{equation}
-La escala integral $L$ es la escala espacial más grande del sistema, a la
-cual se inyecta la energía:
+y con la velocidad cuadrática media total $U = \langle v^2\rangle^{1/2} =
+\sqrt{2E}$ (bajo isotropía, $U = \sqrt{3}\,u_{\rm rms}$ si se prefiere la
+velocidad cuadrática media por componente $u_{\rm rms} = \langle
+u_1^2\rangle^{1/2}$, usada más abajo para $\mathrm{Re}_\lambda$). La tasa
+media de disipación de energía cinética por unidad de masa se obtiene a
+partir de la enstrofía:
 \begin{equation}
-  L = \frac{u_{\rm rms}^3}{\varepsilon}.
+  \varepsilon = 2\nu \langle \omega^2 \rangle.
 \end{equation}
+La escala integral $L$, la escala espacial más grande donde reside la
+mayor parte de la energía (a la cual ésta se inyecta), se calcula a partir
+del espectro de energía como el cociente de momentos espectrales
+\begin{equation}
+  L = \frac{\int (E(k)/k)\,dk}{\int E(k)\,dk}.
+\end{equation}
+Alternativamente, dado que $L$ es por construcción la escala más grande
+del sistema, puede aproximarse directamente por el tamaño de la caja de
+simulación, sin necesidad de calcular el espectro.
+
 El tiempo característico de las estructuras de mayor escala (el
 \emph{tiempo de giro grande}, o \emph{large-eddy turnover time}) es
 \begin{equation}
-  \tau_L = \frac{L}{u_{\rm rms}} = \frac{u_{\rm rms}^2}{\varepsilon}.
+  \tau_L = \frac{L}{U}.
 \end{equation}
 
 \subsection{Rango inercial y microescala de Taylor}
@@ -77,13 +88,15 @@ relevantes a esa escala:
 \begin{equation}
   \eta = \left(\frac{\nu^3}{\varepsilon}\right)^{1/4}, \qquad
   \tau_\eta = \left(\frac{\nu}{\varepsilon}\right)^{1/2}, \qquad
-  u_\eta = (\nu\varepsilon)^{1/4}.
+  u_\eta = (\nu\varepsilon)^{1/4}, \qquad
+  k_\eta = \frac{1}{\eta}.
 \end{equation}
 $\eta$ es la escala espacial por debajo de la cual la disipación viscosa
-domina, $\tau_\eta$ es el tiempo de giro asociado a esa escala, y $u_\eta$
-la velocidad característica correspondiente (nótese que $\eta = u_\eta \tau_\eta$
-y que $\tau_\eta$ coincide con la extrapolación de $\tau_\ell$ del rango
-inercial hasta $\ell=\eta$).
+domina, $\tau_\eta$ es el tiempo de giro asociado a esa escala, $u_\eta$
+la velocidad característica correspondiente, y $k_\eta$ el número de onda
+de Kolmogorov (nótese que $\eta = u_\eta \tau_\eta$ y que $\tau_\eta$
+coincide con la extrapolación de $\tau_\ell$ del rango inercial hasta
+$\ell=\eta$).
 
 El tiempo de Kolmogorov $\tau_\eta$ es la escala temporal de referencia
 para caracterizar la inercia de una partícula suspendida en el flujo: el
