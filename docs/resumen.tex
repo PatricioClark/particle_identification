@@ -4,6 +4,8 @@
 \usepackage[spanish]{babel}
 \usepackage[margin=2.5cm]{geometry}
 \usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usetikzlibrary{babel}  % <-> en opciones de TikZ vs. shorthands de babel-spanish
 \usepackage{hyperref}
 
 \title{Turbulencia y modelos de partículas inerciales}
@@ -61,6 +63,11 @@ El tiempo característico de las estructuras de mayor escala (el
   \tau_L = \frac{L}{U}.
 \end{equation}
 
+La intensidad de la turbulencia se caracteriza por el número de Reynolds
+\begin{equation}
+  \mathrm{Re} = \frac{U L}{\nu}.
+\end{equation}
+
 \subsection{Rango inercial y microescala de Taylor}
 
 En el rango inercial, $\eta \ll \ell \ll L$, las diferencias de velocidad
@@ -98,6 +105,78 @@ de Kolmogorov (nótese que $\eta = u_\eta \tau_\eta$ y que $\tau_\eta$
 coincide con la extrapolación de $\tau_\ell$ del rango inercial hasta
 $\ell=\eta$).
 
+\subsection{Cascada de energía y espectro}
+
+En el rango inercial no actúan ni el forzado (que inyecta energía sólo en
+las escalas grandes) ni la viscosidad (que sólo disipa por debajo de
+$\eta$): las escalas intermedias se limitan a transferir energía hacia
+escalas más pequeñas. En estado estacionario el flujo de energía a través
+de las escalas es entonces constante e igual a la tasa de inyección, que
+a su vez iguala a la tasa de disipación $\varepsilon$. Esta es la
+hipótesis central de la fenomenología de Kolmogorov: en el rango inercial
+$\varepsilon$ es el \emph{único} parámetro relevante, junto con la escala
+considerada.
+
+Por análisis dimensional, el espectro de energía $E(k)$ (definido de modo
+que $\int E(k)\,dk = E$) sólo puede depender de $\varepsilon$ y del número
+de onda $k$, lo que fija
+\begin{equation}
+  E(k) = C_K\,\varepsilon^{2/3} k^{-5/3},
+  \qquad k_L \sim 1/L \ll k \ll k_\eta = 1/\eta,
+  \label{eq:k41}
+\end{equation}
+con $C_K \approx 1.6$ una constante. La ley $k^{-5/3}$ es equivalente al escaleo
+$u_\ell \sim (\varepsilon\ell)^{1/3}$ del rango inercial. El ancho del rango
+inercial
+queda controlado por el número de Reynolds: combinando $\varepsilon \sim
+U^3/L$ con la definición de $\eta$ se obtiene $L/\eta \sim
+\mathrm{Re}^{3/4}$, de modo que sólo a $\mathrm{Re}$ alto existe una
+separación de escalas apreciable entre inyección y disipación. La figura
+\ref{fig:espectro} resume esquemáticamente los tres rangos.
+
+\begin{figure}[htbp]
+  \centering
+  \begin{tikzpicture}
+    % rangos (etiquetas y llaves)
+    \node[font=\footnotesize] at (1.0,5.15) {inyección};
+    \node[font=\footnotesize] at (4.5,5.15) {rango inercial};
+    \node[font=\footnotesize] at (8.6,5.15) {disipación};
+    \draw[<->,gray] (2.1,4.75) -- (6.9,4.75);
+
+    % separaciones de rango
+    \draw[dashed,gray] (2,0) -- (2,4.6);
+    \draw[dashed,gray] (7,0) -- (7,4.6);
+
+    % ejes
+    \draw[->,thick] (0,0) -- (10,0) node[below right] {$\log k$};
+    \draw[->,thick] (0,0) -- (0,5.4) node[above left] {$\log E(k)$};
+
+    % espectro
+    \draw[very thick]
+      (0.5,2.4) .. controls (1.1,3.9) and (1.6,4.2) .. (2,4.2)
+      -- (7,1.8)
+      .. controls (7.8,1.3) and (8.2,0.5) .. (8.7,0.15);
+
+    % pendiente
+    \node[font=\small] at (5.6,3.4) {$E(k)\sim \varepsilon^{2/3}k^{-5/3}$};
+    % \draw[->,gray] (5.0,3.15) -- (4.2,2.85);
+
+    % escalas sobre el eje k
+    \node[below,font=\small] at (2,-0.15) {$k_L \sim 1/L$};
+    \node[below,font=\small] at (7,-0.15) {$k_\eta = 1/\eta$};
+  \end{tikzpicture}
+  \caption{Esquema del espectro de energía de la turbulencia homogénea e
+  isótropa en escala logarítmica. La energía se inyecta en las escalas
+  grandes ($k \lesssim k_L \sim 1/L$), se transfiere sin disipación
+  apreciable a través del rango inercial siguiendo la ley $k^{-5/3}$, y se
+  disipa por viscosidad más allá del número de onda de Kolmogorov
+  $k_\eta = 1/\eta$. La extensión del rango inercial crece como
+  $\mathrm{Re}^{3/4}$.}
+  \label{fig:espectro}
+\end{figure}
+
+\subsection{Número de Stokes}
+
 El tiempo de Kolmogorov $\tau_\eta$ es la escala temporal de referencia
 para caracterizar la inercia de una partícula suspendida en el flujo: el
 número de Stokes se define como
@@ -121,6 +200,14 @@ Maxey-Riley completa se retienen. A continuación se presentan, en orden
 creciente de complejidad, los modelos usados en este proyecto (etiquetas
 de \texttt{simuls.yaml} entre paréntesis).
 
+En todas las simulaciones de este proyecto las partículas son
+neutralmente flotantes: su densidad es igual a la del fluido
+($\gamma = \rho_f/\rho_p = 1$), de modo que el término de flotación se
+anula y los coeficientes de masa añadida / gradiente de presión se
+reducen a la unidad. Por eso $\gamma$ no aparece explícitamente en las
+ecuaciones que siguen. Lo único que se varía entre simulaciones es el
+radio $a$ de la partícula —y por lo tanto $\tau_p$ y $\mathrm{St}$.
+
 \subsection{Trazador fluido (\texttt{LAG})}
 
 En el límite $\mathrm{St}\to 0$ la partícula no tiene inercia y sigue
@@ -141,23 +228,11 @@ Es válido para partículas pequeñas y pesadas ($\rho_p \gg \rho_f$), donde
 el arrastre domina sobre el gradiente de presión, la masa añadida y la
 historia.
 
-\subsection{Maxey-Riley completo (\texttt{MR})}
+\subsection{Maxey-Riley (\texttt{MR})}
 
 Cuando la densidad de la partícula es comparable a la del fluido, deben
-retenerse además el término de gradiente de presión / masa añadida y el de
-flotación. Siguiendo Angriman et al. (2020, ec. 9):
-\begin{equation}
-  \frac{d\mathbf{v}}{dt} = \frac{1}{T_p}\left[\mathbf{u}(\mathbf{x}_p,t)-\mathbf{v}\right]
-  + \frac{3}{2}\frac{\gamma}{1+\gamma/2}\frac{D\mathbf{u}(\mathbf{x}_p,t)}{Dt}
-  + \frac{1-\gamma}{1+\gamma/2}\,\mathbf{g},
-\end{equation}
-con $\gamma = \rho_f/\rho_p$ el cociente de densidades fluido-partícula y
-$T_p$ el tiempo de Stokes definido de forma análoga a $\tau_p$. En GHOST
-$\gamma$ aparece también dentro del número de Reynolds de la partícula
-pero se mantiene siempre en $1$: lo único que se varía entre simulaciones
-es el radio $a$ (y por lo tanto $\mathrm{St}$).
-
-Sin el término de historia (Basset-Boussinesq), la ecuación de
+retenerse además el término de gradiente de presión / masa añadida. Sin el
+término de historia (Basset-Boussinesq), la ecuación de
 Maxey-Riley-Gatignol para una partícula neutralmente flotante se reduce a
 (Español et al. 2025, ec. 2.6):
 \begin{equation}
@@ -179,7 +254,7 @@ Only nonlinear drag (\texttt{ONLD}; Español et al. 2025, ec. 2.7):
   \frac{d\mathbf{v}}{dt} = \frac{1+0.15\,\mathrm{Re}_p^{0.687}}{\tau_p}
   \left[\mathbf{u}(\mathbf{x},t)-\mathbf{v}(t)\right],
   \qquad
-  \mathrm{Re}_p = \frac{(18\,\tau_p/\nu)^{1/2}\,|\mathbf{u}(\mathbf{x},t)-\mathbf{v}(t)|}{1}.
+  \mathrm{Re}_p = (18\,\tau_p/\nu)^{1/2}\,|\mathbf{u}(\mathbf{x},t)-\mathbf{v}(t)|.
 \end{equation}
 \texttt{NLD} agrega a esta misma corrección de arrastre no lineal el
 término de aceleración del fluido $D\mathbf{u}/Dt$ de la ecuación
@@ -241,7 +316,7 @@ agrega estos términos de curvatura a la ecuación de \texttt{MR}.
 Etiqueta & Términos retenidos respecto de Maxey-Riley completo \\
 \hline
 \texttt{LAG}  & ninguno: $\mathbf{v}=\mathbf{u}$ (trazador, $\mathrm{St}=0$) \\
-\texttt{MR}   & arrastre de Stokes + masa añadida/gradiente de presión + flotación \\
+\texttt{MR}   & arrastre de Stokes + masa añadida/gradiente de presión \\
 \texttt{NLD}  & arrastre no lineal + término de aceleración $D\mathbf{u}/Dt$ \\
 \texttt{ONLD} & arrastre no lineal solamente \\
 \texttt{BB}   & \texttt{MR} + integral de historia de Basset-Boussinesq \\
