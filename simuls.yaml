@@ -1,0 +1,137 @@
+  # - LAG (Tracers)
+
+  - name: 'TG768 LAG'
+    flux:
+      forcing: 'TG'
+      resolution: [768, 768, 768]
+    parts:
+      model: 'LAG'
+      st: 0.0
+    path: '/share/scratch8/bespanol/LAG/St0/'
+
+  # - MR (Stokes drag + Acc term)
+
+  - name: 'TG768 MR 0.76'
+    flux:
+      forcing: 'TG'
+      resolution: [768, 768, 768]
+    parts:
+      model: 'MR'
+      st: 0.76
+    path: '/share/scratch8/bespanol/MR/St0-76/'
+
+  - name: 'TG768 MR 3.2'
+    flux:
+      forcing: 'TG'
+      resolution: [768, 768, 768]
+    parts:
+      model: 'MR'
+      st: 3.2
+    path: '/share/scratch8/bespanol/MR/St3-2/'
+
+  - name: 'TG768 MR 8.89'
+    flux:
+      forcing: 'TG'
+      resolution: [768, 768, 768]
+    parts:
+      model: 'MR'
+      st: 8.89
+    path: '/share/scratch8/bespanol/MR/St8-89/'
+
+  # - NLD (Non linear drag + Acc term)
+
+  - name: 'TG768 NLD 8.89'
+    flux:
+      forcing: 'TG'
+      resolution: [768, 768, 768]
+    parts:
+      model: 'NLD'
+      st: 8.89
+    path: '/share/scratch8/bespanol/NLD/St8-89/'
+
+  - name: 'TG768 NLD 312'
+    flux:
+      forcing: 'TG'
+      resolution: [768, 768, 768]
+    parts:
+      model: 'NLD'
+      st: 312
+    path: '/share/scratch8/bespanol/NLD/St312/'
+
+  # - ONLD (Non linear drag)
+
+  - name: 'TG768 ONLD 3.2'
+    flux:
+      forcing: 'TG'
+      resolution: [768, 768, 768]
+    parts:
+      model: 'ONLD'
+      st: 3.2
+    path: '/share/scratch12/bespanol/ONLD/St3-2/'
+
+  - name: 'TG768 ONLD 8.89'
+    flux:
+      forcing: 'TG'
+      resolution: [768, 768, 768]
+    parts:
+      model: 'ONLD'
+      st: 8.89
+    path: '/share/scratch12/bespanol/ONLD/St8-89/'
+
+  - name: 'TG768 ONLD 136'
+    flux:
+      forcing: 'TG'
+      resolution: [768, 768, 768]
+    parts:
+      model: 'ONLD'
+      st: 136
+    path: '/share/scratch12/bespanol/ONLD/St136/'
+
+  - name: 'TG768 ONLD 35.6'
+    flux:
+      forcing: 'TG'
+      resolution: [768, 768, 768]
+    parts:
+      model: 'ONLD'
+      st: 35.6
+    path: '/share/scratch12/bespanol/ONLD/St35-6/'
+
+  - name: 'TG768 ONLD 312'
+    flux:
+      forcing: 'TG'
+      resolution: [768, 768, 768]
+    parts:
+      model: 'ONLD'
+      st: 312
+    path: '/share/scratch12/bespanol/ONLD/St312/'
+
+  # - BB (Stokes drag + Acc term + Basset–Boussinesq integral term)
+
+  - name: 'TG768 BB 8.89'
+    flux:
+      forcing: 'TG'
+      resolution: [768, 768, 768]
+    parts:
+      model: 'BB'
+      st: 8.89
+    path: '/share/scratch8/bespanol/BB/St8-89/'
+
+  - name: 'TG768 BB 35.6'
+    flux:
+      forcing: 'TG'
+      resolution: [768, 768, 768]
+    parts:
+      model: 'BB'
+      st: 35.6
+    path: '/share/scratch8/bespanol/BB/St35-6/'
+
+  # - FAX (Stokes drag + Acc term + Faxen correction)
+
+  - name: 'TG768 FAX 8.89'
+    flux:
+      forcing: 'TG'
+      resolution: [768, 768, 768]
+    parts:
+      model: 'FAX'
+      st: 8.89
+    path: '/share/scratch12/bespanol/FAX/St8-89/'
