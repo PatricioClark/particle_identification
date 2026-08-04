@@ -4,7 +4,8 @@ Each *sample* is an ensemble statistic computed over a batch of
 batch_size uncorrelated particles — the same observable you'd get
 from an experiment with many tracked particles.
 
-Label format:  "<MODEL>_St<st>"   e.g. "MR_St8.89", "LAG_St0.0"
+Label format:  "<MODEL>_St<st>_<forcing><resolution>"
+               e.g. "MR_St8.89_TG768", "LAG_St0.0_RND512"
 """
 
 import yaml
@@ -201,10 +202,12 @@ def build_dataset(yaml_path, batch_size=500, n_batches=10, n_lags=15,
     feature_names = None
 
     for i, sim in enumerate(sims):
-        model = sim["parts"]["model"]
-        st    = sim["parts"]["st"]
-        label = f"{model}_St{st}"
-        path  = sim["path"]
+        model     = sim["parts"]["model"]
+        st        = sim["parts"]["st"]
+        forcing   = sim["flux"]["forcing"]
+        res       = sim["flux"]["resolution"][0]
+        label     = f"{model}_St{st}_{forcing}{res}"
+        path      = sim["path"]
 
         if not Path(path).is_dir():
             print(f"  [skip] {label}: {path}")

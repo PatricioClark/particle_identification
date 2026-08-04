@@ -135,3 +135,96 @@
       model: 'FAX'
       st: 8.89
     path: '/share/scratch12/bespanol/FAX/St8-89/'
+
+  # --- HIT512 multi-particle dataset (RND forcing, second data set) ---
+  # Several models were run off a single flow realization; lag files sit
+  # directly in each outs_* dir (no nested "outs" subdir needed).
+
+  # - LAG (Tracers)
+
+  - name: 'RND512 LAG'
+    flux:
+      forcing: 'RND'
+      resolution: [512, 512, 512]
+    parts:
+      model: 'LAG'
+      st: 0.0
+    path: '/share/data4/bespanol/HIT512_multipart/bin/outs_LAG/'
+
+  # - HPP (naive heavy particle: linear Stokes drag only, no added-mass/pressure/buoyancy)
+
+  - name: 'RND512 HPP 0.1'
+    flux:
+      forcing: 'RND'
+      resolution: [512, 512, 512]
+    parts:
+      model: 'HPP'
+      st: 0.1
+    path: '/share/data4/bespanol/HIT512_multipart/bin/outs_HPP_0-1/'
+
+  - name: 'RND512 HPP 0.6'
+    flux:
+      forcing: 'RND'
+      resolution: [512, 512, 512]
+    parts:
+      model: 'HPP'
+      st: 0.6
+    path: '/share/data4/bespanol/HIT512_multipart/bin/outs_HPP_0-6/'
+
+  - name: 'RND512 HPP 1'
+    flux:
+      forcing: 'RND'
+      resolution: [512, 512, 512]
+    parts:
+      model: 'HPP'
+      st: 1
+    path: '/share/data4/bespanol/HIT512_multipart/bin/outs_HPP_1/'
+
+  - name: 'RND512 HPP 4'
+    flux:
+      forcing: 'RND'
+      resolution: [512, 512, 512]
+    parts:
+      model: 'HPP'
+      st: 4
+    path: '/share/data4/bespanol/HIT512_multipart/bin/outs_HPP_4/'
+
+  # - ONLD (Non linear drag). NOTE: on disk these dirs are named "outs_NLD_*",
+  # but in this second data set NLD and ONLD coincide (no acceleration term),
+  # so they are labeled ONLD here for consistency with the first data set.
+
+  - name: 'RND512 ONLD 0.1'
+    flux:
+      forcing: 'RND'
+      resolution: [512, 512, 512]
+    parts:
+      model: 'ONLD'
+      st: 0.1
+    path: '/share/data4/bespanol/HIT512_multipart/bin/outs_NLD_0-1/'
+
+  - name: 'RND512 ONLD 1'
+    flux:
+      forcing: 'RND'
+      resolution: [512, 512, 512]
+    parts:
+      model: 'ONLD'
+      st: 1
+    path: '/share/data4/bespanol/HIT512_multipart/bin/outs_NLD_1/'
+
+  - name: 'RND512 ONLD 20'
+    flux:
+      forcing: 'RND'
+      resolution: [512, 512, 512]
+    parts:
+      model: 'ONLD'
+      st: 20
+    path: '/share/data4/bespanol/HIT512_multipart/bin/outs_NLD_20/'
+
+  - name: 'RND512 ONLD 100'
+    flux:
+      forcing: 'RND'
+      resolution: [512, 512, 512]
+    parts:
+      model: 'ONLD'
+      st: 100
+    path: '/share/data4/bespanol/HIT512_multipart/bin/outs_NLD_100/'

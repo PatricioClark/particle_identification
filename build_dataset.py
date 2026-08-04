@@ -38,7 +38,9 @@ size = comm.Get_size()
 
 
 def shard_label(sim):
-    return f"{sim['parts']['model']}_St{sim['parts']['st']}"
+    forcing = sim["flux"]["forcing"]
+    res     = sim["flux"]["resolution"][0]
+    return f"{sim['parts']['model']}_St{sim['parts']['st']}_{forcing}{res}"
 
 
 def checkpoint_path(ckpt_dir, sim, yaml_i, shard_j):
