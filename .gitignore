@@ -1,0 +1,24 @@
+# Clon aparte de pmininni/GHOST (se actualiza con git pull adentro)
+GHOST/
+
+# Symlinks a datos en /share
+/MR
+/NLD
+/ONLD
+/new
+
+# Datos de simulación
+*.lag
+*.out
+odir/
+xlgInitRndSeed*.txt
+003/*.txt
+003/GHOST
+
+# Datasets, modelos y checkpoints
+*.pkl
+ckpt/
+
+# Python
+__pycache__/
+*.pyc

@@ -1,0 +1,20 @@
+! Particle solver
+&particles
+psolver = "inerpart"
+/
+
+&inerpart
+partlod = 2
+pidir = "002"
+podir = "002"
+tau = 0.09416
+grav = 0.00
+donldrag = .true.
+gamma = 1.00
+/
+
+! Initial conditions for particles. List separated by ';' to set up ICs.
+&part_initial_conditions
+iclist = "random_x;fluid_v"
+!iclist = "read_x;read_v"
+/

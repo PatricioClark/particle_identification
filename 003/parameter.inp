@@ -1,0 +1,100 @@
+! Example of parameter.inp
+! Rename this file as 'parameter.inp' and place it in the same
+! directory as the GHOST executable to do an HD simulation.
+
+! Grid resolution
+&grid
+nx = 512
+ny = 512
+nz = 512
+/
+
+! Boz size, if not present GHOST uses a 2.pi cubic box
+&boxparams
+Lx = 1.00        ! Length of the box in x
+Ly = 1.00        ! Length of the box in y
+Lz = 1.00        ! Length of the box in z
+/
+
+! General configuration flags
+&status
+idir = "odir"
+odir = "odir"
+stat = 0         ! last binary file if restarting an old run
+mult = 1         ! decreases the time step
+bench = 0        ! benchmark mode if 1
+outs = 0         ! controls the amount of output
+dt = 8e-4        ! time step
+step = 50001       ! total number of steps
+tstep = 400
+sstep = 100      ! number of steps between spectrum output
+cstep = 10     ! number of steps between writing global quantities
+cort = 0.2       ! global correlation time for random forcing methods
+seed = 1000      ! global seed for random number generators
+/
+
+! Solver
+&pdes
+solver = "HD"    ! Solver name, reads a namelist with the same name
+/
+
+! HD solver specific parameters
+&HD
+nu  = 4.5e-4
+dorot = .FALSE.  ! do rotation
+omegax = 0.0     ! rotation in x (ignored if dorot is FALSE)
+omegay = 0.0     ! rotation in y (ignored if dorot is FALSE)
+omegaz = 0.0     ! rotation in z (ignored if dorot is FALSE)
+npassive = 0     ! number of passive scalars
+/
+
+! Initial conditions. List separated by ';' to set up ICs. 
+! For v, ICs can be: read_v, null_v, tg_v, abc_v, random_v
+! Use "read_v" if restarting from a previous file with stat > 0
+! If stat > 0 and the ICs are not "read_v", GHOST resets the flow.
+&initial_conditions
+iclist = "random_v"
+/
+
+&random_v
+u0 = 1.0
+kup = 1
+kdn = 1
+alpha = 0.0
+/
+
+! Forcing. List separated by ';', each forcing is a pair of
+! methods separated by ',': an initial forcing, and an update scheme
+! Forcings for v: null_fv, tg_fv, abc_fv, random_fv
+! Updates for fv: constant_fv, shift_fv, shuffle_fv
+&forcing
+forces = "tg_fv,constant_fv"
+/
+
+! IC and forcing specific parameters, in namelists with their names:
+! Parameters for Taylor-Green velocity forcing
+&tg_fv
+f0 = 0.33  ! amplitude of the mechanical forcing
+kdn = 1.00       ! minimum wavenumber
+kup = 1.00       ! maximum wavenumber
+/
+
+&stepper
+sname = 'TRADITIONAL'
+itype = 1
+norder = 2
+nstage = 2
+/
+
+! Particles general configuration flags
+&pstatus
+maxparts   = 50000 ! Maximum number of particles
+lgmult     = 20     ! Multiplier for part output (must divide tstep evenly)
+ilgwrtunit = 1      ! write positions in box (=1) or grid (=0) units
+ilgouttype = 0      ! Particle output type: 0=binary; 1=ASCII
+ilgcoll    = 0      ! 1=binary collective I/O; 0=task 0 binary (posix) I/O
+/
+
+&partparams
+num_partsets = 2
+/
