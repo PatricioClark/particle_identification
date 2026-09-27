@@ -12,8 +12,8 @@ GHOST/
 *.out
 odir/
 xlgInitRndSeed*.txt
-003/*.txt
-003/GHOST
+runs/003/*.txt
+runs/003/GHOST
 
 # Datasets, modelos y checkpoints
 *.pkl

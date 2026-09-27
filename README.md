@@ -1,5 +1,13 @@
 # Pruebas para `particle_id`
 
+## Estructura
+
+- Raíz, `inspect/`, `docs/`, `simuls.yaml`, `CLAUDE.md`: código y docs compartidos (igual que `main`).
+- `runs/`: corridas. Cada carpeta tiene una copia de los scripts tal como se usaron en esa corrida, más su `run.sh`/`job.sh`.
+- `notes/`: notas (resumen, reuniones, simulaciones).
+
+## Corridas (`runs/`)
+
 - 001: primera prueba, con todas las particulas y sin lags iniciales
 - 002: agrego lags iniciales, saco las BB. También bajo max-steps y n-lags
 - 003: simul TG nueva con mulitpart
