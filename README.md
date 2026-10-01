@@ -12,6 +12,7 @@
 - 002: agrego lags iniciales, saco las BB. También bajo max-steps y n-lags
 - 003: simul TG nueva con mulitpart
 - 004: corro `inspect/batch_converge.py` para ver si tomar 5000 partículas está bien
+- 005: réplica de 002 (mismo código, yaml y parámetros) + `compare.py` para verificar que el dataset sea idéntico; `inspect_signals` e `inspect_energetics` para entender la elección de lags
 
 
 ## GHOST
