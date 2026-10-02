@@ -190,12 +190,82 @@ En tiempos de giro, los lags son 0.067, 0.33, 0.87, 3.0 y 8.3, y la ventana dura
 
 ---
 
-## Próximos pasos
+## 2026-10-01 — ¿Los lags sirven para todas las simulaciones? (experimento 006, parte 4)
 
-1. **Repetir `inspect_signals` con las 21 simulaciones en unidades de L/U**, para comprobar que los lags elegidos (768: 1, 5, 13, 45, 125; 512: 1, 6, 15, 53, 148) también caen en la zona útil para las simulaciones nuevas (BB, HPP, ONLD de 512).
-2. **Confirmar con Patricio el tiempo de giro L/U** (resultado de la prueba de colapso).
-3. **Modificar el pipeline** para que los lags y la ventana se den en tiempos de giro y se conviertan a pasos en cada simulación. También normalizar las features que tienen unidades (S2, S4, MSD…), para que no dependan de la velocidad de cada flujo.
-4. Armar el dataset combinado (006) y entrenar.
+**Contexto:** los lags de 002 se eligieron mirando solo las 11 simulaciones de ese experimento. En 006 hay simulaciones nuevas (las BB, las HPP y las ONLD de 512), así que había que comprobar que esos mismos lags (ya pasados a tiempos de giro) también caen donde se separan sus curvas.
+
+**Qué hice:** el mismo estudio de `inspect_signals`, pero con las 21 simulaciones y todo medido en unidades de cada flujo: el tiempo en tiempos de giro (t/T, con T = L/U) y las amplitudes divididas por la velocidad (S2/U², S4/U⁴) o el tamaño de los remolinos (MSD/L²). Así las curvas de 768 y 512 se pueden poner en el mismo gráfico. Script: `runs/006/inspect_signals_adim.py`, job SLURM 9434. Gráfico: `runs/006/inspect_signals_adim.pdf` (línea llena = 768, discontinua = 512, rojo = los 5 lags, negro = la ventana).
+
+**Resultado: los 5 lags también sirven para las simulaciones nuevas. No hace falta cambiarlos.**
+
+- **Los lags caen en la zona útil en los dos flujos.** En S2 y S4 las curvas se separan sobre todo entre 0.07 y 3 tiempos de giro, y ahí caen 4 de los 5 lags (0.067, 0.33, 0.87 y 3.0). El último (8.3) queda donde las partículas ya casi "se olvidaron" de su velocidad, y la ventana (16.7) en la zona donde todas las curvas se juntan. Es la misma lógica que en 002.
+- **Los dos flujos quedan en la misma escala.** Las curvas de 512 se ubican ordenadas entre las de 768 según su número de Stokes: las partículas más livianas de 512 (Stokes 0.1) quedan cerca de los trazadores de 768, y las ONLD pesadas de 512 (Stokes 20 y 100) mezcladas con las ONLD pesadas de 768. **La adimensionalización con L/U funciona para todas las especies**, no solo para las de la prueba de colapso.
+
+**Dos cosas a tener en cuenta para el clasificador:**
+
+1. **En 512, HPP y ONLD con el mismo Stokes (0.1 y 1) dan curvas prácticamente iguales.** Tiene sentido físico: con partículas tan livianas, el arrastre no lineal (ONLD) casi no se diferencia del lineal (HPP). Es probable que el clasificador las confunda, y no por un error.
+2. **Las BB quedan encimadas con las MR**, como ya pasaba con NLD y FAX en 002. Se suman al grupo difícil de separar.
+
+**Un límite de los datos:** el lag más corto (0.067 tiempos de giro) es exactamente un paso entre archivos en 768. No se pueden usar lags más cortos porque no hay datos más seguidos.
+
+**Pendiente menor:** en el gráfico cuesta distinguir los colores (HPP y ONLD se confunden). Para mostrárselo a Patricio convendría separarlo en dos columnas (768 y 512) con colores más distintos. No cambia las conclusiones.
+
+---
+
+## 2026-10-01 — Modificar el pipeline para usar tiempos de giro (experimento 006, parte 5)
+
+**Contexto:** el programa que arma el dataset (`build_dataset.py`) usaba **una sola lista de lags en pasos** para todas las simulaciones. Con dos flujos distintos eso ya no sirve: cada flujo necesita sus propios lags en pasos para que representen el mismo tiempo físico. Además, algunas features tienen unidades (por ejemplo, dependen de la velocidad del fluido), y sin normalizarlas el clasificador podría distinguir los flujos en lugar de los modelos de partícula.
+
+**Qué cambié** (en `runs/006`, sin tocar el código de la raíz):
+
+- **Lags y ventana en tiempos de giro.** Ahora se le pasan los lags y la ventana en tiempos de giro, y el programa los convierte a pasos **para cada flujo** (768 y 512), usando un tiempo de giro por flujo (el promedio de sus simulaciones). Así las 768 dan exactamente los lags de 002 (`1, 5, 13, 45, 125`, ventana 251) y las 512 dan `1, 6, 15, 53, 148` (ventana 296).
+- **Features normalizadas.** Las que tienen unidades se dividen por las escalas de cada flujo (por ejemplo, S2 por U²). Se puede desactivar.
+- **Los parámetros de cada flujo se calculan una vez y se guardan en un archivo** (`flow_params_002.json` para la verificación), porque leer los espectros es lento. El job solo lee ese archivo.
+
+**Chequeo rápido:** una feature que tiene que dar ~1/3 después de normalizar (la varianza de la velocidad dividida por U²) dio 0.343 en 768 y 0.342 en 512. La normalización funciona.
+
+**Verificación en curso:** corro el programa nuevo con las simulaciones de 002, sus mismos parámetros y **sin normalizar**. Tiene que dar el mismo dataset que 005; si da igual, el cambio no rompió nada. Job `runs/006/job_verif002.sh` (SLURM 9572).
+
+**Resultado: idéntico.** El dataset nuevo es **exactamente igual** al de 005, número por número (esta vez ni siquiera hay diferencias de redondeo): mismas 11 clases, mismas 1100 muestras, mismas partículas y los 55 checkpoints iguales. El único cambio son los nombres de las clases, que ahora incluyen el flujo (`MR_St3.2_TG768` en vez de `MR_St3.2`). **El pipeline nuevo funciona: con lags en tiempos de giro reproduce exactamente lo que hacía el original.**
+
+**Tardó bastante (~1 hora y media o más)** porque el disco de las simulaciones 768 estaba lento (~9 MB/s por proceso). Cada simulación se divide en 5 partes y **cada parte vuelve a leer la trayectoria completa**. Para el dataset de 006 conviene usar una sola parte por simulación con más muestras (`--n-shards-per-sim 1 --batches-per-shard 100`): da la misma cantidad de muestras y lee 5 veces menos datos.
+
+### Problema técnico del cluster: MPI falla en el nodo `sakura`
+
+Los dos primeros intentos de la verificación fallaron apenas arrancaron, con el error `MPI_ERR_OTHER`. Lo que pasaba:
+
+- El programa usa 20 procesos que tienen que **comunicarse entre sí** para coordinarse (eso es MPI).
+- SLURM mandó esos jobs a **`sakura`**, y en `sakura`, **dentro de un job de SLURM**, la forma de comunicación que MPI usa por defecto (llamada UCX) **se cuelga o falla**. Desde la terminal, fuera de SLURM, funciona bien; por eso no aparecía en las pruebas rápidas.
+- Los jobs anteriores no fallaron porque **nunca habían caído en `sakura`** (corrieron en `g1`, `g2`, `a1`, `a2`).
+
+**Solución:** agregarle a `mpirun` la opción **`--mca pml ob1`**, que usa otra forma de comunicación. Lo probé con un job de 20 procesos en `sakura` y funciona. **Conviene usarla en todos los jobs con MPI**, así no importa a qué nodo los mande SLURM:
+
+```bash
+mpirun --use-hwthread-cpus --bind-to hwthread --mca pml ob1 -np 20 python ...
+```
+
+**Pendiente menor:** `predict.py` todavía no funciona con datasets de lags por flujo (reconstruye los lags a partir de una sola ventana). No hace falta por ahora.
+
+---
+
+## Dónde estamos y próximos pasos
+
+**Hecho:**
+
+- ✅ Replicamos 002 exactamente (005).
+- ✅ Entendimos cómo se eligieron los lags de 002 (`inspect_signals`).
+- ✅ Verificamos la adimensionalización con las 768: se recuperan los lags de 002.
+- ✅ Elegimos el tiempo de giro con datos: **L/U** (prueba de colapso).
+- ✅ Calculamos los lags para las 21 simulaciones: 768 → `1, 5, 13, 45, 125`; 512 → `1, 6, 15, 53, 148`.
+- ✅ Comprobamos que esos lags sirven también para las simulaciones nuevas (BB, HPP, ONLD de 512).
+- ✅ Modificamos el pipeline: lags y ventana por flujo en tiempos de giro, y features normalizadas.
+- ✅ Verificamos el pipeline nuevo: con las simulaciones de 002 da exactamente el mismo dataset.
+
+**Lo que falta, en orden:**
+
+1. **Paso C (el siguiente): armar el dataset de 006 y entrenar el clasificador.** Esperar confusión entre HPP y ONLD de Stokes bajo (512) y dentro del grupo MR/NLD/FAX/BB (768).
+
+**En paralelo:** mandarle a Patricio las preguntas de abajo. Las más importantes son la 1 (los trazadores 512), la 3 (confirmar L/U) y la 5 (si incluimos las BB).
 
 ---
 

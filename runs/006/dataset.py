@@ -94,7 +94,8 @@ def load_simulation(sim_path, idxs, max_steps=None):
 # ── Feature-matrix builder for one simulation ─────────────────────────────────
 
 def make_feature_matrix(sim_path, lags, batch_size=500, n_batches=10,
-                        n_load=5000, max_steps=None, window_size=None, seed=0):
+                        n_load=5000, max_steps=None, window_size=None, seed=0,
+                        scales=None):
     """Compute (n_batches × n_features) feature matrix for one sim.
 
     A pool of up to n_load particles is loaded once, then each batch is an
@@ -140,7 +141,7 @@ def make_feature_matrix(sim_path, lags, batch_size=500, n_batches=10,
             v = np.take_along_axis(vel[sel], t_idx3d, axis=2)
         else:
             p, v = pos[sel], vel[sel]
-        feat, names = extract_features(p, v, dt, lags)
+        feat, names = extract_features(p, v, dt, lags, scales=scales)
         rows.append(feat)
 
     return np.array(rows, dtype=np.float64), names

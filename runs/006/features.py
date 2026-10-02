@@ -88,15 +88,19 @@ def _sf(vel, lags, order):
     return out
 
 
-def extract_features(pos, vel, dt, lags):
+def extract_features(pos, vel, dt, lags, scales=None):
     """Compute feature vector for one ensemble batch.
 
     Parameters
     ----------
-    pos  : (n_p, 3, T) — positions in box units [0, 2π]
-    vel  : (n_p, 3, T) — particle velocities
-    dt   : float        — time interval between consecutive snapshots
-    lags : 1-D int array — lag step indices (produced by make_lags)
+    pos    : (n_p, 3, T) — positions in box units [0, 2π]
+    vel    : (n_p, 3, T) — particle velocities
+    dt     : float        — time interval between consecutive snapshots
+    lags   : 1-D int array — lag step indices (produced by make_lags)
+    scales : dict with the flow's "U", "L", "T" (T = L/U), or None.
+             If given, dimensional features are made dimensionless:
+             MSD / L², S2 / U², S4 / U⁴, vel_variance / U², acc_variance / (U/T)².
+             VACF, vel_kurtosis and acc_flatness are already dimensionless.
 
     Returns
     -------
@@ -119,6 +123,14 @@ def extract_features(pos, vel, dt, lags):
     a2    = float((acc ** 2).mean())
     a4    = float((acc ** 4).mean())
     acc_flatness = a4 / a2 ** 2 if a2 > 0 else 0.0
+
+    if scales is not None:
+        U, L, T = scales["U"], scales["L"], scales["T"]
+        d  = d / L**2
+        s2 = s2 / U**2
+        s4 = s4 / U**4
+        v2 = v2 / U**2
+        a2 = a2 / (U / T) ** 2
 
     features = np.concatenate([c, d, s2, s4, [v2, vel_kurtosis, a2, acc_flatness]])
 
