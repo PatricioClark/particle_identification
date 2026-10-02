@@ -248,6 +248,51 @@ mpirun --use-hwthread-cpus --bind-to hwthread --mca pml ob1 -np 20 python ...
 
 ---
 
+## 2026-10-02 — Dataset de 006 armado (experimento 006, parte 6)
+
+**Qué hice:** armé el dataset con las 21 simulaciones (13 de 768 y 8 de 512), con los lags en tiempos de giro y las features normalizadas. Una parte por simulación con 100 muestras cada una. Job `runs/006/job_dataset.sh` (SLURM 9625, nodo `a2`). Archivo: `runs/006/dataset.pkl` (no está en GitHub, como los demás datasets).
+
+**Resultado:** **2100 muestras** (100 por simulación), **21 clases**, 24 features, sin valores faltantes. Lags usados: 768 → `1, 5, 13, 45, 125` (ventana 251); 512 → `1, 6, 15, 53, 148` (ventana 296).
+
+**Chequeo de la normalización:** la varianza de la velocidad dividida por U² da ~1/3 para las partículas livianas de los dos flujos (0.33 trazadores 768, 0.34 HPP y ONLD de Stokes 0.1 en 512) y menos para las muy pesadas (0.22 en ONLD de Stokes 100), que es lo esperable: una partícula pesada suaviza las fluctuaciones de velocidad del fluido.
+
+**Tardó ~2 horas.** Las 768 terminaron en ~1 hora; las 512 tardaron más porque sus trayectorias son más largas (3034 pasos, ~36 GB de lectura cada una).
+
+---
+
+## 2026-10-02 — Clasificador de 006: con y sin BB (experimento 006, parte 7)
+
+**Qué hice:** entrené el clasificador (el mismo de 002: Random Forest, validación cruzada de 5 partes) sobre el dataset de 006 en dos versiones: **con las 21 clases** y **sin las BB** (19 clases; las saqué del dataset con `runs/006/filter_classes.py`, sin recalcular nada). Se corre directo en `sakura`, en un par de minutos. Resultados: `runs/006/train_conBB.log`, `runs/006/train_sinBB.log` y las matrices de confusión `runs/006/model_conBB.confusion.png` y `runs/006/model_sinBB.confusion.png`.
+
+**Resultado: acierta el 98% de las veces en las dos versiones.**
+
+| | clases | muestras | errores | accuracy |
+|---|---|---|---|---|
+| 002 (Patricio, solo 768) | 11 | 1100 | ~3% | 97% |
+| 006 con BB | 21 | 2100 | 46 (2.2%) | **98%** |
+| 006 sin BB | 19 | 1900 | 40 (2.1%) | **98%** |
+
+Es decir: aun con el doble de clases y dos flujos distintos, el clasificador anda tan bien como en 002.
+
+**Qué se confunde (versión con BB):**
+
+| Veces | Clase real → predicha como |
+|---|---|
+| 7 + 5 | NLD 8.89 ↔ MR 3.2 (768) |
+| 7 + 4 | HPP 0.1 ↔ ONLD 0.1 (512) |
+| 6 + 6 | trazadores (LAG) ↔ BB 8.89 (768) |
+| 2 + 2 | trazadores ↔ MR 0.76 (768) |
+| resto | 1 o 2 casos sueltos |
+
+- **Son las confusiones que esperábamos** por los gráficos de `inspect_signals`: partículas livianas que se mueven casi como el fluido (trazadores, MR 0.76, BB 8.89) y modelos con curvas casi encimadas (NLD 8.89 y MR 3.2; HPP y ONLD de Stokes 0.1, que físicamente casi no se diferencian).
+- **Ninguna confusión entre flujos:** nunca se predice una clase de 768 como de 512 ni al revés.
+- **Las BB casi no cambian el resultado.** BB 35.6 se reconoce perfecto; BB 8.89 se confunde con los trazadores. Sin las BB, los trazadores pasan a confundirse un poco más con MR 0.76. Las BB no "rompen" el clasificador, así que **no hay un motivo de rendimiento para sacarlas**.
+- **Las features más útiles** son las de lags cortos (S2 y S4 en los primeros lags) y la varianza de la aceleración, igual que en 002 y coherente con los gráficos.
+
+**Ojo con una interpretación:** que no haya confusiones entre flujos **no prueba** que el clasificador sea independiente del flujo. Las clases de 768 y 512 son distintas (otros modelos u otros Stokes), así que no tendría por qué confundirlas. Para medir si realmente "no depende del flujo" (la idea final del proyecto, para aplicarlo a datos de laboratorio) habría que entrenar con un flujo y probar con el otro, usando clases que estén en los dos. Hoy eso no se puede hacer bien: los trazadores de 512 tienen el problema de las posiciones y las ONLD tienen Stokes distintos en cada flujo.
+
+---
+
 ## Dónde estamos y próximos pasos
 
 **Hecho:**
@@ -260,10 +305,15 @@ mpirun --use-hwthread-cpus --bind-to hwthread --mca pml ob1 -np 20 python ...
 - ✅ Comprobamos que esos lags sirven también para las simulaciones nuevas (BB, HPP, ONLD de 512).
 - ✅ Modificamos el pipeline: lags y ventana por flujo en tiempos de giro, y features normalizadas.
 - ✅ Verificamos el pipeline nuevo: con las simulaciones de 002 da exactamente el mismo dataset.
+- ✅ Armamos el dataset de 006: 21 simulaciones, 2100 muestras, features normalizadas.
+- ✅ Entrenamos el clasificador de 006: 98% de acierto, con y sin BB.
 
 **Lo que falta, en orden:**
 
-1. **Paso C (el siguiente): armar el dataset de 006 y entrenar el clasificador.** Esperar confusión entre HPP y ONLD de Stokes bajo (512) y dentro del grupo MR/NLD/FAX/BB (768).
+1. **Contarle los resultados a Patricio** y definir con él cómo seguir. Ideas:
+   - **Probar si el clasificador depende del flujo:** entrenar con un flujo y probar con el otro. Para eso hacen falta clases comparables en los dos flujos (por ejemplo, los trazadores de 512 corregidos, o simulaciones con los mismos Stokes).
+   - **Cuántos lags usar:** repetir el dataset con más o menos lags y comparar el acierto (sobre todo en las clases que se confunden).
+   - **Adaptar `predict.py`** para que funcione con lags por flujo, y probarlo con datos nuevos.
 
 **En paralelo:** mandarle a Patricio las preguntas de abajo. Las más importantes son la 1 (los trazadores 512), la 3 (confirmar L/U) y la 5 (si incluimos las BB).
 

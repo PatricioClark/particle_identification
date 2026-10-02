@@ -1,0 +1,83 @@
+Loading dataset from dataset.pkl …
+
+Dataset: 2100 samples × 24 features, 21 classes
+   0  LAG_St0.0_TG768  (100 samples)
+   1  MR_St0.76_TG768  (100 samples)
+   2  MR_St3.2_TG768  (100 samples)
+   3  MR_St8.89_TG768  (100 samples)
+   4  NLD_St8.89_TG768  (100 samples)
+   5  NLD_St312_TG768  (100 samples)
+   6  ONLD_St3.2_TG768  (100 samples)
+   7  ONLD_St8.89_TG768  (100 samples)
+   8  ONLD_St35.6_TG768  (100 samples)
+   9  ONLD_St312_TG768  (100 samples)
+  10  BB_St8.89_TG768  (100 samples)
+  11  BB_St35.6_TG768  (100 samples)
+  12  FAX_St8.89_TG768  (100 samples)
+  13  HPP_St0.1_RND512  (100 samples)
+  14  HPP_St0.6_RND512  (100 samples)
+  15  HPP_St1_RND512  (100 samples)
+  16  HPP_St4_RND512  (100 samples)
+  17  ONLD_St0.1_RND512  (100 samples)
+  18  ONLD_St1_RND512  (100 samples)
+  19  ONLD_St20_RND512  (100 samples)
+  20  ONLD_St100_RND512  (100 samples)
+
+Cross-validating (5-fold stratified) …
+
+── Classification report ──────────────────────────────────────────────────
+                   precision    recall  f1-score   support
+
+  LAG_St0.0_TG768       0.89      0.91      0.90       100
+  MR_St0.76_TG768       0.98      0.97      0.97       100
+   MR_St3.2_TG768       0.92      0.93      0.93       100
+  MR_St8.89_TG768       1.00      0.99      0.99       100
+ NLD_St8.89_TG768       0.95      0.92      0.93       100
+  NLD_St312_TG768       1.00      1.00      1.00       100
+ ONLD_St3.2_TG768       1.00      1.00      1.00       100
+ONLD_St8.89_TG768       1.00      1.00      1.00       100
+ONLD_St35.6_TG768       1.00      1.00      1.00       100
+ ONLD_St312_TG768       1.00      1.00      1.00       100
+  BB_St8.89_TG768       0.93      0.94      0.94       100
+  BB_St35.6_TG768       0.99      1.00      1.00       100
+ FAX_St8.89_TG768       1.00      1.00      1.00       100
+ HPP_St0.1_RND512       0.96      0.93      0.94       100
+ HPP_St0.6_RND512       1.00      0.99      0.99       100
+   HPP_St1_RND512       1.00      1.00      1.00       100
+   HPP_St4_RND512       1.00      1.00      1.00       100
+ONLD_St0.1_RND512       0.93      0.96      0.95       100
+  ONLD_St1_RND512       0.99      1.00      1.00       100
+ ONLD_St20_RND512       1.00      1.00      1.00       100
+ONLD_St100_RND512       1.00      1.00      1.00       100
+
+         accuracy                           0.98      2100
+        macro avg       0.98      0.98      0.98      2100
+     weighted avg       0.98      0.98      0.98      2100
+
+Confusion matrix → model_conBB.confusion.png
+
+Fitting final model on full dataset …
+
+── Top 20 features ───────────────────────────────────────────────────────
+   1. s2_l02                          0.0735
+   2. s2_l00                          0.0683
+   3. acc_variance                    0.0634
+   4. s4_l01                          0.0611
+   5. s4_l02                          0.0584
+   6. s2_l01                          0.0577
+   7. s4_l00                          0.0554
+   8. vacf_l02                        0.0476
+   9. vacf_l00                        0.0468
+  10. s2_l03                          0.0466
+  11. vacf_l01                        0.0465
+  12. acc_flatness                    0.0456
+  13. s4_l03                          0.0424
+  14. vacf_l03                        0.0397
+  15. msd_l00                         0.0389
+  16. s2_l04                          0.0343
+  17. msd_l01                         0.0292
+  18. vel_variance                    0.0285
+  19. s4_l04                          0.0279
+  20. vacf_l04                        0.0216
+Feature importances → model_conBB.importances.png
+Model saved → model_conBB.pkl
