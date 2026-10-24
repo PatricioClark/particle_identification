@@ -293,6 +293,57 @@ Es decir: aun con el doble de clases y dos flujos distintos, el clasificador and
 
 ---
 
+## 2026-10-22 — Corridas nuevas de GHOST en 512 (pedido de Patricio)
+
+**La preocupación de Patricio:** el clasificador anda **demasiado** bien (98%). El miedo es que esté reconociendo **la simulación** y no **el modelo de partícula**. Pasa porque cada clase es una sola simulación y la validación cruzada siempre prueba con muestras de simulaciones que ya vio al entrenar. Un clasificador que reconociera "la corrida" por cualquier detalle sacaría el mismo 98%.
+
+**Lo que pidió:** dos simulaciones nuevas del flujo 512 (forzado aleatorio):
+
+1. **El mismo ejemplo con otra semilla.** Si el clasificador reconoce las clases en un flujo que nunca vio, está mirando la física y no la simulación.
+2. **El mismo modelo físico en otro flujo:** ONLD con Stokes ≈ 3.2 en 512, para comparar con el ONLD 3.2 de 768. Es el primer par con el mismo modelo y el mismo Stokes en los dos flujos.
+
+**Cómo lo armé:** las dos cosas van en **una sola corrida**, en `/share/data4/msvidal/RND512_nuevas/` (fuera del repo, por el tamaño).
+
+- Arranca del último estado guardado de la corrida de bespanol (t = 90.75), **con otra semilla del forzado** (2207 en lugar de 1105). El flujo arranca turbulento y se va separando del original.
+- Usa el mismo programa de bespanol, que corre 9 especies de partículas a la vez. Ocho son las mismas de su corrida (HPP 0.1, 0.6, 1, 4 y ONLD 0.1, 1, 20, 100) y siguen desde donde él las dejó.
+- En el lugar de los trazadores (que tenían el problema de las posiciones) puse la **ONLD de Stokes 3.2** (`tau = 0.3766`), que arranca de las posiciones y velocidades de HPP 4 (mismo tau).
+- Para el Stokes usé el τ_η real de 512 (0.118, ver la pregunta 7).
+
+**¿Por qué cambiar la semilla del forzado y no la de las partículas?** Con la misma semilla el flujo sería el mismo, y si el clasificador reconoce el flujo la prueba no lo detectaría. Además, la variación de partículas dentro de un flujo ya la mide la validación cruzada (y la prueba de control de abajo). Y reubicar partículas al azar obliga a esperar que las pesadas se acomoden al flujo, lo que para ONLD 100 lleva más que toda la corrida.
+
+**Cuidados para cuando la analicemos:**
+
+- Al principio el flujo nuevo es casi igual al de bespanol. Hay que **descartar las primeras ~50 salidas** (lo mismo cubre el ajuste de la ONLD 3.2, que arrancó de un estado que no es el suyo).
+- Va a tener ~360 salidas: alcanza para la ventana de 296, pero casi sin margen para moverla. Bespanol juntó 3034 salidas en ~12 jobs (un mes).
+- La energía del flujo nuevo está algo baja (<v²> ≈ 0.72 contra 0.97 de la corrida original), dentro de las variaciones normales de su corrida. Conviene **normalizar con sus propias escalas** (U, L, T de su `balance.txt` y sus espectros).
+- El clasificador de 006 no puede contestar la pregunta 2 tal como está, porque sus etiquetas incluyen el flujo ("ONLD_St3.2_TG768"). Para eso habría que entrenar con etiquetas de solo modelo + Stokes. Y aun con el mismo Stokes no es "la misma partícula" en todo sentido: τ_η/T vale 0.18 en 768 y 0.22 en 512.
+
+**Estado:** prueba de 25 minutos (job 11685) bien: las posiciones avanzan de acuerdo con la velocidad en las 9 especies, sin valores raros. Corrida definitiva: **job 11687**, 64 procesos en `a1` (no había lugar para los 94 de bespanol), ~8 minutos por salida (bespanol: ~7 con 94). Arrancó el 22/10 a las 22:05 y termina el 24/10 cerca de las 21:30. Para ver cómo va: `/share/data4/msvidal/RND512_nuevas/estado.sh`.
+
+---
+
+## 2026-10-23 — ¿El clasificador reconoce la simulación o el modelo? (chequeos con 006)
+
+Mientras corre GHOST, revisé el problema con los datos que ya teníamos. Scripts: `runs/006/check_flow_vs_model.py` y `runs/006/null_test.py`. Resultados: `runs/006/check_flow_vs_model.log` y `runs/006/null/null_test.log`.
+
+**1. Las 8 clases de 512 comparten el mismo flujo.** Ahí no hay "simulación" que reconocer: si las separa, es por las partículas. Entrenando solo con ellas acierta el **98.6%**. Sacando las dos features más sensibles a la energía del flujo (`vel_variance` y `acc_variance`) acierta **98.4%**, o sea que no depende de ellas.
+
+**2. Separa pares que casi no difieren.** HPP y ONLD de Stokes 0.1 son casi iguales (a ese Stokes el arrastre no lineal casi no actúa) y aun así los separa en un 95%. La diferencia está en la aceleración (2%) y en S4 a lags cortos (7–12%), en el sentido que espera la física: el arrastre no lineal frena un poco más y la partícula sigue más de cerca al fluido. Lo detecta porque cada muestra promedia 5000 partículas y tiene muy poco ruido.
+
+**3. Prueba de control: ¿reconoce el grupo de partículas?** Las 100 muestras de cada clase salen de un mismo grupo de 50 000 partículas, y comparten sus fluctuaciones. Para descartar que eso infle el resultado, armé para HPP 0.1 y ONLD 0.1 dos grupos de 50 000 partículas que no se pisan (A y B), con el mismo procedimiento que 006 (job `runs/006/job_null.sh`, nodo `g2`, ~20 minutos).
+
+| prueba | acierto |
+|---|---|
+| misma especie, grupo A contra grupo B (azar = 50%) | **50%** (HPP), **57%** (ONLD) |
+| HPP contra ONLD, solo grupos A (como en 006) | 95% |
+| entrenar con los grupos A, probar con los B (partículas nunca vistas) | **95.5%** |
+
+**Conclusión:** dos grupos de la misma especie **no** se distinguen, y con partículas nuevas acierta igual. El 98% **no** viene de que las muestras compartan partículas: dentro de un mismo flujo, el clasificador está viendo diferencias físicas reales, aunque sean chicas.
+
+**Lo que esto no contesta:** en 768 cada modelo es una corrida distinta (cada una con su `balance.txt` y su T). Ahí el clasificador **sí** podría estar reconociendo detalles de cada corrida. Eso lo responde la corrida de semilla nueva.
+
+---
+
 ## Dónde estamos y próximos pasos
 
 **Hecho:**
@@ -307,13 +358,17 @@ Es decir: aun con el doble de clases y dos flujos distintos, el clasificador and
 - ✅ Verificamos el pipeline nuevo: con las simulaciones de 002 da exactamente el mismo dataset.
 - ✅ Armamos el dataset de 006: 21 simulaciones, 2100 muestras, features normalizadas.
 - ✅ Entrenamos el clasificador de 006: 98% de acierto, con y sin BB.
+- ✅ Le contamos los resultados a Patricio. Pidió dos simulaciones nuevas de 512 (otra semilla y ONLD Stokes 3.2): **corriendo** (job 11687, termina el 24/10 ~21:30).
+- ✅ Dentro de un mismo flujo, el 98% es física y no filtración entre muestras (prueba de control).
 
 **Lo que falta, en orden:**
 
-1. **Contarle los resultados a Patricio** y definir con él cómo seguir. Ideas:
-   - **Probar si el clasificador depende del flujo:** entrenar con un flujo y probar con el otro. Para eso hacen falta clases comparables en los dos flujos (por ejemplo, los trazadores de 512 corregidos, o simulaciones con los mismos Stokes).
-   - **Cuántos lags usar:** repetir el dataset con más o menos lags y comparar el acierto (sobre todo en las clases que se confunden).
-   - **Adaptar `predict.py`** para que funcione con lags por flujo, y probarlo con datos nuevos.
+1. **Armar un script de predicción** que tome una simulación nueva, calcule sus propias escalas (U, L, T), use los lags de su flujo en tiempos de giro y normalice las features (`predict.py` todavía no hace nada de esto).
+2. **Cuando termine la corrida:** descartar las primeras ~50 salidas, armar las muestras y:
+   - **prueba de semilla:** ¿las 8 especies caen en su clase de 512?
+   - **ONLD 3.2 en 512:** ¿dónde cae con el clasificador de 006? Y entrenar un clasificador con etiquetas sin flujo (modelo + Stokes) para ver si la reconoce como "ONLD 3.2".
+3. **Contarle a Patricio** los resultados y confirmar lo de la semilla (pregunta 8).
+4. Más adelante: **cuántos lags usar** (repetir con más o menos lags y comparar, sobre todo en las clases que se confunden).
 
 **En paralelo:** mandarle a Patricio las preguntas de abajo. Las más importantes son la 1 (los trazadores 512), la 3 (confirmar L/U) y la 5 (si incluimos las BB).
 
@@ -327,3 +382,5 @@ Es decir: aun con el doble de clases y dos flujos distintos, el clasificador and
 4. **Fórmula de ε.** `inspect_energetics.py` y el resumen (ec. 3) usan ε = 2ν⟨ω²⟩. Pero si ⟨ω²⟩ es la 3ª columna de `balance.txt`, eso da el doble del ε real: con los datos, ν⟨ω²⟩ coincide con la tasa de inyección de energía (4ª columna). No afecta el tiempo de giro, pero sí η, τ_η y el Stokes calculado. ¿Lo corregimos?
 5. **Simulaciones BB.** En 002 las sacaste ("saco las BB"). ¿Por qué? ¿Las incluyo en 006?
 6. **Paso de tiempo de las 512.** El tiempo entre archivos `.lag` es 0.030, pero `dt × lgmult` del `parameter.inp` de `bin/` da 0.0375. Supongo que las partículas usan otro `lgmult` (en `part_parameters/`). No afecta al pipeline, que usa los tiempos de los archivos, pero quiero confirmarlo.
+7. **Stokes de las etiquetas de 512.** Los `tau` de los archivos de partículas de 512 corresponden a un τ_η = 0.09416, pero el τ_η del flujo (con ε = ν⟨ω²⟩) da ≈ 0.118. Entonces el Stokes real es 0.8 veces la etiqueta: "HPP 4" es en realidad Stokes ≈ 3.2, y "ONLD 100" ≈ 80. ¿De dónde sale 0.09416? Para la ONLD 3.2 nueva usé 0.118.
+8. **Semilla de la corrida nueva.** Cambiamos la semilla **del forzado** (flujo nuevo) y no la de las posiciones de las partículas (mismo flujo), porque lo que se quiere probar es si el clasificador reconoce el flujo. ¿Era eso lo que tenías en mente?

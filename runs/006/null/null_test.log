@@ -1,0 +1,10 @@
+Pools: [('outs_HPP_0-1', 'A'), ('outs_HPP_0-1', 'B'), ('outs_NLD_0-1', 'A'), ('outs_NLD_0-1', 'B')]
+
+(i) mismo modelo, grupos de partículas distintos (azar = 0.50):
+    outs_HPP_0-1: A vs B  acierto CV = 0.500
+    outs_NLD_0-1: A vs B  acierto CV = 0.570
+
+(ii) outs_HPP_0-1 vs outs_NLD_0-1, solo grupos A (como en 006):  acierto CV = 0.950
+
+(iii) entrenado con grupos A, evaluado con grupos B (partículas nunca vistas):
+    acierto = 0.955   (outs_HPP_0-1: 0.94, outs_NLD_0-1: 0.97)

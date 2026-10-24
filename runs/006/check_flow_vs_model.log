@@ -1,0 +1,50 @@
+── 1. Clasificador de 21 clases (CV), por flujo ──
+  RND512: acierto 0.985 (800 muestras), asignadas al otro flujo: 0
+  TG768: acierto 0.974 (1300 muestras), asignadas al otro flujo: 0
+  Confusión de las clases RND512 dentro del clasificador de 21 clases:
+               0    1    2    3    4    5    6    7
+ 0 HPP_St0.1   93    0    0    0    7    0    0    0
+ 1 HPP_St0.6    0   99    0    0    0    1    0    0
+ 2 HPP_St1      0    0  100    0    0    0    0    0
+ 3 HPP_St4      0    0    0  100    0    0    0    0
+ 4 ONLD_St0.1   4    0    0    0   96    0    0    0
+ 5 ONLD_St1     0    0    0    0    0  100    0    0
+ 6 ONLD_St20    0    0    0    0    0    0  100    0
+ 7 ONLD_St100   0    0    0    0    0    0    0  100
+acierto: 0.985
+
+── 2. Solo RND512 (8 clases, mismo flujo) ──
+               0    1    2    3    4    5    6    7
+ 0 HPP_St0.1   94    0    0    0    6    0    0    0
+ 1 HPP_St0.6    0   99    0    0    0    1    0    0
+ 2 HPP_St1      0    0  100    0    0    0    0    0
+ 3 HPP_St4      0    0    0  100    0    0    0    0
+ 4 ONLD_St0.1   4    0    0    0   96    0    0    0
+ 5 ONLD_St1     0    0    0    0    0  100    0    0
+ 6 ONLD_St20    0    0    0    0    0    0  100    0
+ 7 ONLD_St100   0    0    0    0    0    0    0  100
+acierto: 0.986
+
+── 3. Solo RND512, sin vel_variance, acc_variance ──
+               0    1    2    3    4    5    6    7
+ 0 HPP_St0.1   93    0    0    0    7    0    0    0
+ 1 HPP_St0.6    0   99    0    0    0    1    0    0
+ 2 HPP_St1      0    0  100    0    0    0    0    0
+ 3 HPP_St4      0    0    0  100    0    0    0    0
+ 4 ONLD_St0.1   5    0    0    0   95    0    0    0
+ 5 ONLD_St1     0    0    0    0    0  100    0    0
+ 6 ONLD_St20    0    0    0    0    0    0  100    0
+ 7 ONLD_St100   0    0    0    0    0    0    0  100
+acierto: 0.984
+
+── 4. Separación entre clases (todas): distancia entre centroides / dispersión interna ──
+  dispersión interna media: 0.539 (en unidades de desvío global)
+  pares más cercanos (separación < ~2 => se pisan):
+      0.34  HPP_St0.1_RND512     vs ONLD_St0.1_RND512
+      0.38  HPP_St0.6_RND512     vs ONLD_St1_RND512
+      0.52  MR_St3.2_TG768       vs NLD_St8.89_TG768
+      0.53  LAG_St0.0_TG768      vs NLD_St8.89_TG768
+      0.67  LAG_St0.0_TG768      vs MR_St3.2_TG768
+      0.91  LAG_St0.0_TG768      vs MR_St0.76_TG768
+      0.91  MR_St0.76_TG768      vs MR_St3.2_TG768
+      1.17  MR_St0.76_TG768      vs NLD_St8.89_TG768
