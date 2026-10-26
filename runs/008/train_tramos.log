@@ -1,0 +1,101 @@
+Entrenamiento: 21 simulaciones, 2108 muestras; tramos por simulación: min 3, max 10
+Corrida nueva: 9 especies
+
+── V0 (escalas del flujo (como 007)), features: todas ──
+   CV por tramos: total 0.359 | TG768 0.346 | RND512 0.380
+   pares HPP/ONLD de 512: HPP0.1/ONLD0.1 0.01  HPP0.6/ONLD1 0.12  HPP4/ONLD20 0.71
+   clases con menos acierto: BB_St8.89_TG768 0.00, HPP_St0.1_RND512 0.00, LAG_St0.0_TG768 0.00, MR_St0.76_TG768 0.00, MR_St3.2_TG768 0.00
+   corrida nueva: 6 de 8 especies bien (acierto medio 0.699)
+      NUEVA HPP 0.1   acierto  0.73 → HPP_St0.1_RND512 73, ONLD_St0.1_RND512 27
+      NUEVA HPP 0.6   acierto  0.00 → ONLD_St1_RND512 100
+      NUEVA HPP 1     acierto  0.18 → ONLD_St20_RND512 82, HPP_St1_RND512 18
+      NUEVA HPP 4     acierto  1.00 → HPP_St4_RND512 100
+      NUEVA ONLD 0.1  acierto  0.68 → ONLD_St0.1_RND512 68, HPP_St0.1_RND512 32
+      NUEVA ONLD 1    acierto  1.00 → ONLD_St1_RND512 100
+      NUEVA ONLD 20   acierto  1.00 → ONLD_St20_RND512 100
+      NUEVA ONLD 100  acierto  1.00 → ONLD_St100_RND512 100
+      NUEVA ONLD 3.2  (sin clase)   → ONLD_St20_RND512 100
+
+── V0 (escalas del flujo (como 007)), features: sin aceleración ──
+   CV por tramos: total 0.283 | TG768 0.318 | RND512 0.225
+   pares HPP/ONLD de 512: HPP0.1/ONLD0.1 0.01  HPP0.6/ONLD1 0.00  HPP4/ONLD20 0.34
+   clases con menos acierto: BB_St8.89_TG768 0.00, HPP_St0.1_RND512 0.00, HPP_St0.6_RND512 0.00, LAG_St0.0_TG768 0.00, MR_St0.76_TG768 0.00
+   corrida nueva: 6 de 8 especies bien (acierto medio 0.695)
+      NUEVA HPP 0.1   acierto  0.98 → HPP_St0.1_RND512 98, ONLD_St0.1_RND512 2
+      NUEVA HPP 0.6   acierto  0.00 → ONLD_St1_RND512 100
+      NUEVA HPP 1     acierto  0.62 → HPP_St1_RND512 62, ONLD_St20_RND512 38
+      NUEVA HPP 4     acierto  0.97 → HPP_St4_RND512 97, ONLD_St20_RND512 3
+      NUEVA ONLD 0.1  acierto  0.01 → HPP_St0.1_RND512 99, ONLD_St0.1_RND512 1
+      NUEVA ONLD 1    acierto  0.98 → ONLD_St1_RND512 98, HPP_St1_RND512 2
+      NUEVA ONLD 20   acierto  1.00 → ONLD_St20_RND512 100
+      NUEVA ONLD 100  acierto  1.00 → ONLD_St100_RND512 100
+      NUEVA ONLD 3.2  (sin clase)   → ONLD_St20_RND512 100
+
+── V1 (L/U del tramo), features: todas ──
+   CV por tramos: total 0.598 | TG768 0.560 | RND512 0.660
+   pares HPP/ONLD de 512: HPP0.1/ONLD0.1 0.14  HPP0.6/ONLD1 0.56  HPP4/ONLD20 0.94
+   clases con menos acierto: BB_St8.89_TG768 0.00, MR_St3.2_TG768 0.00, LAG_St0.0_TG768 0.01, HPP_St0.1_RND512 0.14, NLD_St8.89_TG768 0.14
+   corrida nueva: 6 de 8 especies bien (acierto medio 0.775)
+      NUEVA HPP 0.1   acierto  1.00 → HPP_St0.1_RND512 100
+      NUEVA HPP 0.6   acierto  1.00 → HPP_St0.6_RND512 100
+      NUEVA HPP 1     acierto  1.00 → HPP_St1_RND512 100
+      NUEVA HPP 4     acierto  1.00 → HPP_St4_RND512 100
+      NUEVA ONLD 0.1  acierto  0.00 → HPP_St0.1_RND512 100
+      NUEVA ONLD 1    acierto  0.20 → HPP_St0.6_RND512 80, ONLD_St1_RND512 20
+      NUEVA ONLD 20   acierto  1.00 → ONLD_St20_RND512 100
+      NUEVA ONLD 100  acierto  1.00 → ONLD_St100_RND512 100
+      NUEVA ONLD 3.2  (sin clase)   → HPP_St1_RND512 98, ONLD_St8.89_TG768 2
+
+── V1 (L/U del tramo), features: sin aceleración ──
+   CV por tramos: total 0.518 | TG768 0.531 | RND512 0.496
+   pares HPP/ONLD de 512: HPP0.1/ONLD0.1 0.14  HPP0.6/ONLD1 0.24  HPP4/ONLD20 0.61
+   clases con menos acierto: BB_St8.89_TG768 0.00, MR_St3.2_TG768 0.00, LAG_St0.0_TG768 0.01, ONLD_St0.1_RND512 0.12, HPP_St0.1_RND512 0.16
+   corrida nueva: 6 de 8 especies bien (acierto medio 0.762)
+      NUEVA HPP 0.1   acierto  1.00 → HPP_St0.1_RND512 100
+      NUEVA HPP 0.6   acierto  0.98 → HPP_St0.6_RND512 98, ONLD_St1_RND512 2
+      NUEVA HPP 1     acierto  1.00 → HPP_St1_RND512 100
+      NUEVA HPP 4     acierto  1.00 → HPP_St4_RND512 100
+      NUEVA ONLD 0.1  acierto  0.00 → HPP_St0.1_RND512 100
+      NUEVA ONLD 1    acierto  0.12 → HPP_St0.6_RND512 88, ONLD_St1_RND512 12
+      NUEVA ONLD 20   acierto  1.00 → ONLD_St20_RND512 100
+      NUEVA ONLD 100  acierto  1.00 → ONLD_St100_RND512 100
+      NUEVA ONLD 3.2  (sin clase)   → HPP_St1_RND512 100
+
+── V2 (Kolmogorov del tramo), features: todas ──
+   CV por tramos: total 0.590 | TG768 0.550 | RND512 0.656
+   pares HPP/ONLD de 512: HPP0.1/ONLD0.1 0.19  HPP0.6/ONLD1 0.52  HPP4/ONLD20 0.93
+   clases con menos acierto: BB_St8.89_TG768 0.00, LAG_St0.0_TG768 0.00, MR_St0.76_TG768 0.00, NLD_St8.89_TG768 0.01, MR_St3.2_TG768 0.03
+   corrida nueva: 6 de 8 especies bien (acierto medio 0.785)
+      NUEVA HPP 0.1   acierto  0.28 → ONLD_St0.1_RND512 72, HPP_St0.1_RND512 28
+      NUEVA HPP 0.6   acierto  1.00 → HPP_St0.6_RND512 100
+      NUEVA HPP 1     acierto  1.00 → HPP_St1_RND512 100
+      NUEVA HPP 4     acierto  1.00 → HPP_St4_RND512 100
+      NUEVA ONLD 0.1  acierto  0.99 → ONLD_St0.1_RND512 99, HPP_St0.1_RND512 1
+      NUEVA ONLD 1    acierto  0.01 → HPP_St0.6_RND512 99, ONLD_St1_RND512 1
+      NUEVA ONLD 20   acierto  1.00 → ONLD_St20_RND512 100
+      NUEVA ONLD 100  acierto  1.00 → ONLD_St100_RND512 100
+      NUEVA ONLD 3.2  (sin clase)   → HPP_St1_RND512 100
+
+── V2 (Kolmogorov del tramo), features: sin aceleración ──
+   CV por tramos: total 0.508 | TG768 0.521 | RND512 0.485
+   pares HPP/ONLD de 512: HPP0.1/ONLD0.1 0.20  HPP0.6/ONLD1 0.34  HPP4/ONLD20 0.42
+   clases con menos acierto: BB_St8.89_TG768 0.00, LAG_St0.0_TG768 0.00, MR_St0.76_TG768 0.00, NLD_St8.89_TG768 0.00, MR_St3.2_TG768 0.02
+   corrida nueva: 6 de 8 especies bien (acierto medio 0.762)
+      NUEVA HPP 0.1   acierto  0.23 → ONLD_St0.1_RND512 77, HPP_St0.1_RND512 23
+      NUEVA HPP 0.6   acierto  1.00 → HPP_St0.6_RND512 100
+      NUEVA HPP 1     acierto  0.93 → HPP_St1_RND512 93, HPP_St0.6_RND512 7
+      NUEVA HPP 4     acierto  1.00 → HPP_St4_RND512 100
+      NUEVA ONLD 0.1  acierto  0.99 → ONLD_St0.1_RND512 99, HPP_St0.1_RND512 1
+      NUEVA ONLD 1    acierto  0.00 → HPP_St0.6_RND512 100
+      NUEVA ONLD 20   acierto  0.95 → ONLD_St20_RND512 95, HPP_St4_RND512 5
+      NUEVA ONLD 100  acierto  1.00 → ONLD_St100_RND512 100
+      NUEVA ONLD 3.2  (sin clase)   → HPP_St1_RND512 100
+
+── Resumen ──
+variante features         CV total  TG768 RND512  nueva
+V0   todas               0.359  0.346  0.380   6/8
+V0   sin aceleración     0.283  0.318  0.225   6/8
+V1   todas               0.598  0.560  0.660   6/8
+V1   sin aceleración     0.518  0.531  0.496   6/8
+V2   todas               0.590  0.550  0.656   6/8
+V2   sin aceleración     0.508  0.521  0.485   6/8

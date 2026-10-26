@@ -344,6 +344,163 @@ Mientras corre GHOST, revisé el problema con los datos que ya teníamos. Script
 
 ---
 
+## 2026-10-24 — Lo que charlamos con Patricio: el flujo en las etiquetas y el primer lag
+
+**Las etiquetas incluyen el flujo, y está bien así.** La idea final es aplicar el clasificador a datos de un experimento. El experimentador sabe en qué tipo de flujo midió, y los dos flujos simulados tienen su análogo de laboratorio: Taylor-Green es el modelo clásico del flujo de **von Kármán** (un cilindro agitado por dos discos que giran en sentidos opuestos), y el forzado aleatorio se parece a la turbulencia homogénea de un tanque agitado por chorros. Entonces, frente a un experimento, se miran solo las clases de su tipo de flujo. **Patricio dijo que no hagamos un clasificador sin el flujo en las etiquetas.**
+
+Con este criterio, la prueba más importante es la de **semilla**: mismo tipo de flujo, pero una realización que el clasificador nunca vio, como sería un experimento.
+
+**El primer lag de 512 quedaba 15% corto.** Un paso entre salidas equivale a 0.0668 T en 768 pero a 0.0565 T en 512, así que el primer lag (t* = 0.0668) es 1 paso en 768 y debería ser 1.18 pasos en 512, pero se redondeaba a 1. Patricio sugirió **interpolar**.
+
+**¿Perdemos información si en vez de interpolar usamos lags más largos?** Lo probé sacándole al clasificador de 006 las features del primer lag:
+
+| features | acierto |
+|---|---|
+| todas | 97.8% |
+| sin el primer lag | 97.6% |
+| sin los dos primeros lags | 97.5% |
+| sin el primer lag ni las de aceleración | 96.6% |
+
+El primer lag casi no aporta información propia: la aceleración (que es el "lag cero") y el segundo lag ya cubren la región corta. Igual decidimos **interpolar**: no se pierde nada, corrige el sesgo entre flujos y es lo que va a hacer falta con experimentos, donde la cámara tiene su propia frecuencia de muestreo.
+
+---
+
+## 2026-10-24 — Lags interpolados (experimento 007)
+
+**Qué cambié:** carpeta nueva `runs/007`, copia del código de 006 (que queda intacto) con estos cambios:
+
+- `features.py`: los lags pueden ser fraccionarios (en pasos). Se calculan las estadísticas en los dos pasos enteros vecinos y se interpola. Para MSD, S2 y S4 la interpolación es en escala logarítmica, porque a lags cortos son leyes de potencia (S2 crece como t²) y una interpolación lineal se equivocaría ~10%. Para la VACF es lineal.
+- `build_dataset.py`: opción `--interp-lags`, que deja los lags en el t* exacto en vez de redondearlos.
+- `dataset.py`: opción para descartar las primeras salidas de una corrida (para la corrida nueva).
+
+**Lags nuevos** (`runs/007/flow_params_007.json`, mismas escalas que 006):
+
+| flujo | 006 (redondeados) | 007 (exactos) |
+|---|---|---|
+| TG768 | 1, 5, 13, 45, 125 | 1, 5, 13, 45, 125 (no cambian) |
+| RND512 | 1, 6, 15, 53, 148 | 1.18, 5.91, 15.36, 53.16, 147.67 |
+
+**Verificación** (`runs/007/verify_interp.py`, resultado en `verify_interp.log`), con trazadores, MR 3.2 y ONLD 312 de 768:
+
+1. **Con lags enteros da exactamente lo mismo que 006.**
+2. **Prueba de submuestreo:** me quedé con una salida de cada 2 (o de cada 3), así los lags caen entre salidas, e interpolé. Comparado con el valor exacto de la serie completa:
+
+| | interpolado (007) | redondeado (006) |
+|---|---|---|
+| VACF | < 0.2% | ~2% |
+| MSD | < 0.2% | 43–78% |
+| S2 | 0.5–3% | 28–75% |
+| S4 | 1–7% | 43–200% |
+
+Son los errores del lag más corto, el caso difícil; desde el segundo lag, el interpolado tiene menos de 0.3% de error. Redondear deja errores enormes a lags cortos.
+
+**Script para evaluar la corrida nueva:** `runs/007/eval_new_run.py`. Arma las muestras de la corrida nueva igual que el dataset (descartando las primeras 50 salidas) y las pasa por el clasificador. Tiene dos normalizaciones:
+
+- **escalas propias**, medidas en la corrida nueva, como haríamos con datos de origen desconocido;
+- **escalas de entrenamiento** de 512.
+
+Con sus propias escalas, la corrida nueva tiene un tiempo de giro **23% más largo** (T = 0.655 contra 0.531), por la menor energía. Si el resultado cambia mucho entre las dos normalizaciones, las fluctuaciones del flujo afectan al clasificador.
+
+**Jobs encadenados** (arrancan solos cuando termina GHOST y libera `a1`):
+
+| job | qué hace |
+|---|---|
+| 11814 | dataset de 007 con lags interpolados (21 simulaciones) |
+| 11815 | muestras de la corrida nueva, con las dos normalizaciones |
+| 11816 | entrena el clasificador de 007 y lo evalúa sobre la corrida nueva |
+
+Resultados en `runs/007/`: `train.log`, `predict_own.log` y `predict_train.log`. Para ver cómo van: `/share/data4/msvidal/RND512_nuevas/estado.sh`.
+
+---
+
+## 2026-10-25 — Prueba de semilla: la corrida nueva (experimento 007)
+
+**La corrida terminó bien:** 364 salidas (t = 90.78 a 101.67), sin errores. El clasificador de 007 (lags interpolados) acierta **98%** en validación cruzada, igual que 006.
+
+**Qué hice:** con la corrida nueva (descartando las primeras 50 salidas, quedan 313 ≈ 14 T) armé 100 muestras por especie, igual que en el dataset, y las pasé por el clasificador. Probé dos normalizaciones: con las escalas medidas en la corrida nueva y con las del entrenamiento (`runs/007/eval_new_run.py`; resultados en `predict_own.log` y `predict_train.log`).
+
+| especie | escalas de la corrida nueva | escalas del entrenamiento |
+|---|---|---|
+| HPP 0.1, 0.6, 1, 4 | ✅ 100% | ❌ 0% (las toma por clases más pesadas) |
+| ONLD 100 | ✅ 100% | ❌ 0% |
+| ONLD 0.1 | ❌ 0% → dijo HPP 0.1 | ❌ |
+| ONLD 1 | ❌ 0% → dijo HPP 0.6 | ❌ |
+| ONLD 20 | ❌ 3% → dijo HPP 4 | ❌ |
+| **total** | **5 de 8** | **0 de 8** |
+
+- **Reconoce la inercia, pero no la ley de arrastre:** las ONLD que falla las confunde con la HPP de inercia parecida.
+- **Normalizar con las escalas propias es imprescindible.** La corrida nueva tiene menos energía (⟨v²⟩ = 0.74 contra 0.97 en promedio en la original; U = 0.86 contra 0.99). Con el U del entrenamiento sus velocidades quedan "chicas" y todo parece más pesado.
+- **La ONLD 3.2 (sin clase propia)** queda indecisa: 61% ONLD 8.89 de 768 y 34% HPP 1 de 512, según cuánto se descarte al principio.
+
+---
+
+## 2026-10-25 — Control: ¿la corrida original también falla? (experimento 007)
+
+**Pregunta:** ¿la corrida nueva falla por ser otra simulación o por otra cosa? En el entrenamiento, cada partícula de una muestra viene de un momento al azar de toda la corrida (~170 T, con momentos de mucha y poca energía). La corrida nueva, en cambio, es un solo tramo de ~14 T, y de poca energía.
+
+**Qué hice:** tomé tramos de la corrida **original** del mismo largo (313 salidas), con sus propias escalas, y los pasé por el mismo clasificador (`runs/007/job_control.sh`; resultados en `predict_orig_*.log` y `predict_nueva_skip*.log`).
+
+| tramo (~14 T) | ε | especies bien |
+|---|---|---|
+| original, alta energía (t = 67–77) | 0.075 | 7 de 8 |
+| original, intermedio (t = 30–40) | 0.045 | 6 de 8 |
+| original, baja energía (t = 78–88) | 0.037 | 6 de 8 |
+| nueva (t = 92–102) | 0.030 | 5 de 8 |
+
+**Resultado: la corrida original también falla, en las mismas especies** (las ONLD de Stokes bajo). No es que reconozca "la simulación": la falla viene del momento del flujo, y el acierto en las ONLD sigue a la disipación del tramo. Descartar 0, 50 o 100 salidas al principio de la corrida nueva da lo mismo.
+
+---
+
+## 2026-10-25 — Revisión del armado del dataset
+
+Revisando el dataset paso por paso encontré algunas cosas (todo anotado en la pestaña "Cómo se arma el dataset (007)" del documento para Patricio):
+
+- **Stokes de 768: bien.** τ_η ≈ 0.043 en las 13 simulaciones, y los Stokes reales difieren de la etiqueta en menos de 3.5%. El desfasaje de 0.8 es solo de 512 (pregunta 7). ε = ν⟨ω²⟩, sin el 2, coincide con la energía inyectada también en 768.
+- **Duración:** las de 512 duran 171 T (~10 ventanas de 16.7 T); las de 768, entre 58 y 83 T (3.5–5 ventanas). No hace falta igualarlas, porque lags y ventana ya están en tiempos de giro. El flujo de 768 es muy estable (⟨v²⟩ ±4%) y el de 512 varía casi ×3, porque el forzado aleatorio a veces mete mucha energía y a veces la saca.
+- **La ventana de 16.7 T** sale de 002 (`--max-steps 251` en 768) pasada a tiempos de giro. Es el pedazo de trayectoria de cada partícula, y el lag más largo es la mitad.
+- **La aceleración** se calcula entre dos salidas seguidas: no está interpolada (0.0668 T en 768 contra 0.0565 T en 512) y es casi el S2 a un paso.
+- **Las BB tienen 25 000 partículas** (el resto, 500 000 o 1 000 000).
+- **Las partículas St 312 de 768** probablemente no llegaron a su régimen (τp ≈ 13, casi toda la trayectoria).
+
+**¿Se puede correr HPP en 768?** El binario viejo de 768 ya no corre en este cluster (le falta `libgfortran.so.4`). El GHOST nuevo de bespanol sí: toma la resolución del archivo de parámetros, tiene forzado Taylor-Green y lleva 9 especies a la vez, pero solo tiene trazadores, HPP y ONLD (no MR, NLD, BB ni FAX). 768 llevaría ~1.5–2 semanas. La propuesta es **Taylor-Green a 512** pareado con RND512 (mismos modelos y Stokes reales) y una **prueba rápida con el forzado aleatorio congelado** (`constant_fv`). Está en el resumen del documento, para decidir con Patricio (pregunta 9).
+
+---
+
+## 2026-10-25 — Dataset por tramo (experimento 008)
+
+**Idea:** armar las muestras como en un experimento. Las 5000 partículas de una muestra comparten un mismo tramo de 16.7 T (una "medición") y se normalizan con las escalas medidas en ese tramo. En la validación se separa **por tramos**: el clasificador se prueba con momentos del flujo que nunca vio.
+
+**Qué hice** (`runs/008/tramos_dataset.py` y `tramos_train.py`, job `job_tramos.sh`, ~2 h en `a1`): corté cada simulación en tramos consecutivos (10 en 512, 3–4 en 768) y armé ~100 muestras por simulación con tres normalizaciones:
+
+- **V0:** escalas del flujo, como antes;
+- **V1:** L/U del tramo;
+- **V2:** Kolmogorov del tramo (lags en τ_η, amplitudes con u_η, η).
+
+Probé cada una con y sin las features de aceleración. En 29 tramos el primer lag daba apenas menos de una salida (≥ 0.9) y se fijó en 1.
+
+| normalización | features | acierto por tramos | TG768 | RND512 | corrida nueva |
+|---|---|---|---|---|---|
+| V0: escalas del flujo | todas | 36% | 35% | 38% | 6 de 8 |
+| **V1: L/U del tramo** | **todas** | **60%** | **56%** | **66%** | **6 de 8** |
+| V2: Kolmogorov del tramo | todas | 59% | 55% | 66% | 6 de 8 |
+| V1 / V2 | sin aceleración | 51–52% | 52–53% | 49–50% | 6 de 8 |
+
+(21 clases: el azar es ~5%. Resultado completo en `runs/008/train_tramos.log`.)
+
+**Conclusiones:**
+
+- **El número honesto es ~60%, no 98%.** El 98% venía de que cada muestra promediaba toda la corrida.
+- **Normalizar con las escalas del tramo es clave** (36% → 60%). L/U y Kolmogorov dan lo mismo.
+- **La aceleración aporta** (sacarla baja ~8 puntos).
+- **Qué se reconoce bien** (V1): el flujo (99%), la inercia a Stokes medio y alto (HPP 1 y 4, ONLD 20 y 100 de 512; NLD 312) y **si la partícula tiene o no el término Du/Dt**: las 4 ONLD de 768 (sin Du/Dt) salen ≥ 97%. FAX 8.89, 98%.
+- **Qué falla:** las partículas livianas de 768 parecidas a trazadores (LAG, BB 8.89, MR 0.76, MR 3.2, NLD 8.89) se confunden entre sí (0–57%), y HPP contra ONLD a Stokes 0.1 y ~1 en 512 (14–59%).
+- **En 768 también falla, aunque su flujo es estable.** No es solo la variabilidad del forzado aleatorio: las muestras de un solo momento tienen más ruido (la configuración de los remolinos grandes en ese tramo) y eso tapa las diferencias chicas.
+- **Corrida nueva: 6 de 8** en todas las variantes (antes 5 de 8).
+
+**Ojo:** las de 768 tienen solo 3–4 tramos y la validación usa 3 particiones, así que diferencias de pocos puntos entre variantes no significan mucho.
+
+---
+
 ## Dónde estamos y próximos pasos
 
 **Hecho:**
@@ -358,17 +515,20 @@ Mientras corre GHOST, revisé el problema con los datos que ya teníamos. Script
 - ✅ Verificamos el pipeline nuevo: con las simulaciones de 002 da exactamente el mismo dataset.
 - ✅ Armamos el dataset de 006: 21 simulaciones, 2100 muestras, features normalizadas.
 - ✅ Entrenamos el clasificador de 006: 98% de acierto, con y sin BB.
-- ✅ Le contamos los resultados a Patricio. Pidió dos simulaciones nuevas de 512 (otra semilla y ONLD Stokes 3.2): **corriendo** (job 11687, termina el 24/10 ~21:30).
+- ✅ Le contamos los resultados a Patricio. Pidió dos simulaciones nuevas de 512 (otra semilla y ONLD Stokes 3.2): hechas (job 11687, 364 salidas).
 - ✅ Dentro de un mismo flujo, el 98% es física y no filtración entre muestras (prueba de control).
+- ✅ Lags en el t* exacto, interpolando entre salidas (007), verificado.
+- ✅ Prueba de semilla: 5 de 8 especies con escalas propias; la corrida original falla igual en tramos cortos.
+- ✅ Dataset por tramo (008): el acierto honesto es ~60%; robusto para flujo, inercia y término Du/Dt; frágil para trazadores/MR livianas y HPP/ONLD a Stokes bajo.
+- ✅ Resumen para la reunión con Patricio (pestaña "Resumen para la reunión" del documento).
 
 **Lo que falta, en orden:**
 
-1. **Armar un script de predicción** que tome una simulación nueva, calcule sus propias escalas (U, L, T), use los lags de su flujo en tiempos de giro y normalice las features (`predict.py` todavía no hace nada de esto).
-2. **Cuando termine la corrida:** descartar las primeras ~50 salidas, armar las muestras y:
-   - **prueba de semilla:** ¿las 8 especies caen en su clase de 512?
-   - **ONLD 3.2 en 512:** ¿dónde cae con el clasificador de 006? Y entrenar un clasificador con etiquetas sin flujo (modelo + Stokes) para ver si la reconoce como "ONLD 3.2".
-3. **Contarle a Patricio** los resultados y confirmar lo de la semilla (pregunta 8).
-4. Más adelante: **cuántos lags usar** (repetir con más o menos lags y comparar, sobre todo en las clases que se confunden).
+1. **Contarle a Patricio** los resultados de 007 y 008 y decidir las simulaciones nuevas (preguntas 8 a 10).
+2. **Datos "tipo experimento"** (experimento 4 del resumen): menos partículas por muestra, trayectorias más cortas, ruido en las posiciones. Depende de cómo sean los datos del experimento (pregunta 10).
+3. **Calibrar la aceleración** al mismo t* en los dos flujos (aporta, así que conviene arreglarla y no sacarla).
+4. Si Patricio está de acuerdo: **forzado aleatorio congelado** (~2 días) y **Taylor-Green 512 pareado** (~4 días).
+5. Más adelante: **cuántos lags usar** y si hacen falta features nuevas para separar las clases livianas.
 
 **En paralelo:** mandarle a Patricio las preguntas de abajo. Las más importantes son la 1 (los trazadores 512), la 3 (confirmar L/U) y la 5 (si incluimos las BB).
 
@@ -383,4 +543,6 @@ Mientras corre GHOST, revisé el problema con los datos que ya teníamos. Script
 5. **Simulaciones BB.** En 002 las sacaste ("saco las BB"). ¿Por qué? ¿Las incluyo en 006?
 6. **Paso de tiempo de las 512.** El tiempo entre archivos `.lag` es 0.030, pero `dt × lgmult` del `parameter.inp` de `bin/` da 0.0375. Supongo que las partículas usan otro `lgmult` (en `part_parameters/`). No afecta al pipeline, que usa los tiempos de los archivos, pero quiero confirmarlo.
 7. **Stokes de las etiquetas de 512.** Los `tau` de los archivos de partículas de 512 corresponden a un τ_η = 0.09416, pero el τ_η del flujo (con ε = ν⟨ω²⟩) da ≈ 0.118. Entonces el Stokes real es 0.8 veces la etiqueta: "HPP 4" es en realidad Stokes ≈ 3.2, y "ONLD 100" ≈ 80. ¿De dónde sale 0.09416? Para la ONLD 3.2 nueva usé 0.118.
-8. **Semilla de la corrida nueva.** Cambiamos la semilla **del forzado** (flujo nuevo) y no la de las posiciones de las partículas (mismo flujo), porque lo que se quiere probar es si el clasificador reconoce el flujo. ¿Era eso lo que tenías en mente?
+8. **Semilla y punto de partida de la corrida nueva.** Cambiamos la semilla **del forzado** (flujo nuevo) y no la de las posiciones de las partículas (mismo flujo), porque lo que se quiere probar es si el clasificador reconoce el flujo. Además, la corrida **arranca del último estado de la corrida de bespanol** (t = 90.75: flujo desarrollado, partículas siguen donde quedaron); al principio el flujo nuevo es casi igual al viejo. ¿Era eso lo que tenías en mente, o preferís arrancar de otro estado (o de cero) para tener una realización totalmente independiente?
+9. **Simulaciones pareadas.** ¿Avanzamos con Taylor-Green a 512 (con el GHOST nuevo: trazador, HPP y ONLD con los mismos Stokes reales que RND512)? ¿Hacemos antes la prueba rápida con el forzado aleatorio congelado? HPP en 768 se puede, pero lleva ~2 semanas.
+10. **Datos del experimento.** ¿Cuántas partículas por medición, cuánto duran las trayectorias, frecuencia de la cámara, ruido en las posiciones y qué partículas son? Define cuánto degradar las muestras y si hay que rediseñar las features.
