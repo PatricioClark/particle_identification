@@ -16,6 +16,7 @@
 - 006: todas las simulaciones de `simuls.yaml` (768 + 512, sin ONLD 136). Parte 1: `lags_adim.py` pasa los lags a tiempos de giro y verifica que en 768 se recuperan los de 002
 - 007: lags en el t* exacto, interpolando entre salidas (`features.py`, `--interp-lags`); evaluación de la corrida nueva de RND512 con otra semilla (`eval_new_run.py`) y control con tramos de la corrida original
 - 008: dataset con muestras por tramo (todas las partículas en un mismo tramo de 16.7 T, escalas del tramo) y validación separando por tramos (`tramos_dataset.py`, `tramos_train.py`)
+- 009: estadísticas por partícula y por ventana (`moments_dataset.py`) para comparar largo de tramo (16.7, 6, 4 T) y entrenamiento con muestras de un tramo o mezcladas, validando por momento del flujo (`train_schemes.py`)
 
 
 ## GHOST

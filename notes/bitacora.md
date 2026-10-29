@@ -501,6 +501,51 @@ Probé cada una con y sin las features de aceleración. En 29 tramos el primer l
 
 ---
 
+## 2026-10-26 — Largo del tramo y entrenamiento mezclado (experimento 009)
+
+**Dos preguntas de Patricio:** (1) 16.7 T le parecía un tramo largo; (2) él usaría tramos distintos para entrenar y evaluar, pero dentro del entrenamiento mezclaría tramos. Además comentó que el flujo se descorrelaciona en ~1 T.
+
+**Primero, la descorrelación con nuestros datos.** La velocidad de las partículas livianas pierde la mitad de la correlación hacia ~3 T (VACF 0.80 a 0.87 T, 0.46 a 3 T, 0.11 a 8.35 T); las pesadas tardan más. Pero el **nivel de energía del flujo** (lo que hacía fallar a las ONLD) cambia más lento: autocorrelación de ⟨v²⟩ en RND512 de 0.93 a 1 T, 0.49 a 5 T y ~0 a 10 T. O sea: los momentos independientes del flujo son cada ~10 T.
+
+**Qué hice** (`runs/009`): calculé las estadísticas **de cada partícula en cada ventana** una sola vez (`moments_dataset.py`), así cualquier muestra (de una ventana o mezclada) es un promedio de partículas. Verifiqué que con lags enteros reproduce las features de siempre (diferencia 3·10⁻⁹). Bloques de tiempo de 16.7 T, separados en 3 grupos **por momento del flujo**: cada bloque va entero, con **todas las clases a la vez**, a entrenamiento o a prueba. Dentro de cada bloque, ventanas de 16.7, 6 y 4 T (lags hasta la mitad de la ventana). Dos esquemas de entrenamiento: muestras de una sola ventana, o mezcladas entre ventanas de los bloques de entrenamiento (lo de Patricio). La prueba siempre con muestras de una sola ventana (`train_schemes.py`, resultado en `train_schemes.log`).
+
+| tramo | entrenamiento | acierto | TG768 | RND512 | HPP/ONLD 512 | livianas 768 | corrida nueva |
+|---|---|---|---|---|---|---|---|
+| 16.7 T | un tramo | **77%** | 66% | 84% | 79% | 26% | 6 de 8 |
+| 16.7 T | mezclado | 71% | 62% | 77% | 69% | 21% | 5 de 8 |
+| **6 T** | **un tramo** | **75%** | 66% | 81% | 78% | 30% | **8 de 8** |
+| 6 T | mezclado | 67% | 59% | 72% | 66% | 26% | 6 de 8 |
+| 4 T | un tramo | 75% | 62% | 83% | 79% | 24% | 7 de 8 |
+| 4 T | mezclado | 64% | 59% | 67% | 62% | 21% | 6 de 8 |
+
+**Conclusiones:**
+
+- **Se puede acortar el tramo casi sin perder:** de 16.7 a 6 o 4 T baja ~2 puntos. Elegimos **6 T** (la corrida nueva da 8 de 8, aunque las ONLD 0.1 y 1 quedan justas).
+- **Mezclar tramos en el entrenamiento da peor** en todos los casos (6–11 puntos menos). Las muestras mezcladas tienen menos ruido que las de prueba y el clasificador no aprende la dispersión de un solo momento del flujo.
+- **El acierto honesto es ~75%, no 60%.** En 008 la validación separaba tramos al azar *por clase*: podía entrenar con la ONLD 0.1 en un momento del flujo y probar la HPP 0.1 en ese mismo momento, y como el estado del flujo domina, eso confunde justo esos pares. Acá cada momento sale entero. Es la explicación más probable (no verificada directamente).
+- **Las livianas de 768** (trazador, MR, BB y NLD a Stokes bajo) siguen confundiéndose entre sí (21–30%).
+
+---
+
+## 2026-10-26 — Corridas pareadas HPP/ONLD en 512 (pedido de Patricio)
+
+**El pedido:** más simulaciones de 512 como las originales, con HPP y ONLD **en los mismos Stokes**, con más puntos entre 0.1 y 1–2.
+
+**Cómo:** el binario de bespanol corre 9 especies por corrida, así que son **dos corridas (A y B) con exactamente el mismo flujo**: mismo `parameter.inp`, misma semilla y misma cantidad de procesos en el mismo nodo (GHOST es determinista). Arrancan del último estado de nuestra corrida nueva (estado 0136, t ≈ 101.25, semilla 2207). Los `tau` siguen la convención original (St etiqueta × 0.09416; el Stokes real es ~0.8 × la etiqueta). Patricio no pidió trazadores, así que ese lugar se usó para un par más.
+
+| | HPP (St etiqueta) | ONLD (St etiqueta) |
+|---|---|---|
+| A | 0.1, 0.2, 0.35, 0.6, 1.4 | 0.1, 0.2, 0.35, 0.6 |
+| B | 1, 2, 4, 20 | 1, 1.4, 2, 4, 20 |
+
+Son 9 Stokes con los dos modelos. Las especies que ya existían continúan con sus mismas partículas; las nuevas arrancan de las posiciones y velocidades de la especie con el `tau` más parecido. Carpeta: `/share/data4/msvidal/RND512_pares/{A,B}`; estado con `estado.sh`.
+
+**Prueba de 40 minutos:** el `balance.txt` de A y B dio idéntico (diferencia 0) y las 18 especies arrancaron bien (posiciones de acuerdo con la velocidad, sin NaN).
+
+**Primer job (jobs 11970 y 11971, 45 procesos cada uno en `a1`, ~12 min por salida):** A llegó a t = 109.10 (261 salidas) y B a t = 108.06 (227 salidas), sin errores y con el flujo idéntico. **Segundo job** (12241 y 12242): las dos reinician desde el último estado común (0145) para seguir con el mismo flujo. Como los momentos independientes del flujo son cada ~10 T y cada job da ~11 T, harían falta ~3 jobs para validar con 3 bloques independientes.
+
+---
+
 ## Dónde estamos y próximos pasos
 
 **Hecho:**
@@ -521,14 +566,16 @@ Probé cada una con y sin las features de aceleración. En 29 tramos el primer l
 - ✅ Prueba de semilla: 5 de 8 especies con escalas propias; la corrida original falla igual en tramos cortos.
 - ✅ Dataset por tramo (008): el acierto honesto es ~60%; robusto para flujo, inercia y término Du/Dt; frágil para trazadores/MR livianas y HPP/ONLD a Stokes bajo.
 - ✅ Resumen para la reunión con Patricio (pestaña "Resumen para la reunión" del documento).
+- ✅ Largo del tramo y entrenamiento mezclado (009): tramo de 6 T, entrenamiento con muestras de un solo tramo, acierto honesto ~75%.
+- ✅ Corridas pareadas HPP/ONLD en 512 (A y B, 9 Stokes con los dos modelos): primer job hecho, segundo en cola.
 
 **Lo que falta, en orden:**
 
-1. **Contarle a Patricio** los resultados de 007 y 008 y decidir las simulaciones nuevas (preguntas 8 a 10).
-2. **Datos "tipo experimento"** (experimento 4 del resumen): menos partículas por muestra, trayectorias más cortas, ruido en las posiciones. Depende de cómo sean los datos del experimento (pregunta 10).
+1. **Terminar las corridas pareadas** (~3 jobs en total) y analizarlas con tramos de 6 T: ¿HPP y ONLD con el mismo Stokes se distinguen, y desde qué Stokes?
+2. **Datos "tipo experimento"**: menos partículas por muestra, trayectorias más cortas, ruido en las posiciones. Depende de cómo sean los datos del experimento (pregunta 10).
 3. **Calibrar la aceleración** al mismo t* en los dos flujos (aporta, así que conviene arreglarla y no sacarla).
 4. Si Patricio está de acuerdo: **forzado aleatorio congelado** (~2 días) y **Taylor-Green 512 pareado** (~4 días).
-5. Más adelante: **cuántos lags usar** y si hacen falta features nuevas para separar las clases livianas.
+5. Más adelante: **cuántos lags usar** y si hacen falta features nuevas para separar las clases livianas de 768.
 
 **En paralelo:** mandarle a Patricio las preguntas de abajo. Las más importantes son la 1 (los trazadores 512), la 3 (confirmar L/U) y la 5 (si incluimos las BB).
 

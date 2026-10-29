@@ -1,0 +1,88 @@
+21 simulaciones de entrenamiento, 9 especies de la corrida nueva; pool 20000 partículas, muestras de 5000
+
+── ventana 16.7 T, entrenamiento coherent (ventanas por simulación: 3–10) ──
+   prueba por bloques: total 0.772 | TG768 0.656 | RND512 0.841 | HPP/ONLD 512 0.788 | livianas 768 0.256
+   corrida nueva: 6 de 8 especies bien
+      NUEVA HPP 0.1    1.00 → HPP_St0.1_RND512 100
+      NUEVA HPP 0.6    1.00 → HPP_St0.6_RND512 100
+      NUEVA HPP 1      1.00 → HPP_St1_RND512 100
+      NUEVA HPP 4      1.00 → HPP_St4_RND512 100
+      NUEVA ONLD 0.1   0.00 → HPP_St0.1_RND512 100
+      NUEVA ONLD 1     0.42 → HPP_St0.6_RND512 58, ONLD_St1_RND512 42
+      NUEVA ONLD 20    1.00 → ONLD_St20_RND512 100
+      NUEVA ONLD 100   1.00 → ONLD_St100_RND512 100
+      NUEVA ONLD 3.2   —    → HPP_St1_RND512 100
+
+── ventana 16.7 T, entrenamiento mixed (ventanas por simulación: 3–10) ──
+   prueba por bloques: total 0.714 | TG768 0.621 | RND512 0.770 | HPP/ONLD 512 0.693 | livianas 768 0.211
+   corrida nueva: 5 de 8 especies bien
+      NUEVA HPP 0.1    1.00 → HPP_St0.1_RND512 100
+      NUEVA HPP 0.6    1.00 → HPP_St0.6_RND512 100
+      NUEVA HPP 1      1.00 → HPP_St1_RND512 100
+      NUEVA HPP 4      1.00 → HPP_St4_RND512 100
+      NUEVA ONLD 0.1   0.00 → HPP_St0.1_RND512 100
+      NUEVA ONLD 1     0.00 → HPP_St0.6_RND512 100
+      NUEVA ONLD 20    0.00 → HPP_St4_RND512 100
+      NUEVA ONLD 100   1.00 → ONLD_St100_RND512 100
+      NUEVA ONLD 3.2   —    → ONLD_St8.89_TG768 72, HPP_St1_RND512 28
+
+── ventana 6 T, entrenamiento coherent (ventanas por simulación: 6–20) ──
+   prueba por bloques: total 0.750 | TG768 0.656 | RND512 0.807 | HPP/ONLD 512 0.776 | livianas 768 0.300
+   corrida nueva: 8 de 8 especies bien
+      NUEVA HPP 0.1    0.62 → HPP_St0.1_RND512 62, ONLD_St0.1_RND512 38
+      NUEVA HPP 0.6    0.98 → HPP_St0.6_RND512 98, ONLD_St1_RND512 2
+      NUEVA HPP 1      1.00 → HPP_St1_RND512 100
+      NUEVA HPP 4      1.00 → HPP_St4_RND512 100
+      NUEVA ONLD 0.1   0.59 → ONLD_St0.1_RND512 59, HPP_St0.1_RND512 41
+      NUEVA ONLD 1     0.51 → ONLD_St1_RND512 51, HPP_St0.6_RND512 49
+      NUEVA ONLD 20    1.00 → ONLD_St20_RND512 100
+      NUEVA ONLD 100   1.00 → ONLD_St100_RND512 100
+      NUEVA ONLD 3.2   —    → HPP_St1_RND512 100
+
+── ventana 6 T, entrenamiento mixed (ventanas por simulación: 6–20) ──
+   prueba por bloques: total 0.673 | TG768 0.593 | RND512 0.722 | HPP/ONLD 512 0.662 | livianas 768 0.258
+   corrida nueva: 6 de 8 especies bien
+      NUEVA HPP 0.1    0.84 → HPP_St0.1_RND512 84, ONLD_St0.1_RND512 16
+      NUEVA HPP 0.6    1.00 → HPP_St0.6_RND512 100
+      NUEVA HPP 1      0.72 → HPP_St1_RND512 72, ONLD_St3.2_TG768 28
+      NUEVA HPP 4      1.00 → HPP_St4_RND512 100
+      NUEVA ONLD 0.1   0.38 → HPP_St0.1_RND512 62, ONLD_St0.1_RND512 38
+      NUEVA ONLD 1     0.45 → HPP_St0.6_RND512 55, ONLD_St1_RND512 45
+      NUEVA ONLD 20    0.50 → ONLD_St20_RND512 50, HPP_St4_RND512 47
+      NUEVA ONLD 100   1.00 → ONLD_St100_RND512 100
+      NUEVA ONLD 3.2   —    → HPP_St1_RND512 50, ONLD_St8.89_TG768 50
+
+── ventana 4 T, entrenamiento coherent (ventanas por simulación: 12–40) ──
+   prueba por bloques: total 0.753 | TG768 0.623 | RND512 0.830 | HPP/ONLD 512 0.785 | livianas 768 0.243
+   corrida nueva: 7 de 8 especies bien
+      NUEVA HPP 0.1    0.83 → HPP_St0.1_RND512 83, ONLD_St0.1_RND512 17
+      NUEVA HPP 0.6    1.00 → HPP_St0.6_RND512 100
+      NUEVA HPP 1      0.72 → HPP_St1_RND512 72, HPP_St0.6_RND512 28
+      NUEVA HPP 4      1.00 → HPP_St4_RND512 100
+      NUEVA ONLD 0.1   0.38 → HPP_St0.1_RND512 62, ONLD_St0.1_RND512 38
+      NUEVA ONLD 1     0.56 → ONLD_St1_RND512 56, HPP_St0.6_RND512 44
+      NUEVA ONLD 20    1.00 → ONLD_St20_RND512 100
+      NUEVA ONLD 100   1.00 → ONLD_St100_RND512 100
+      NUEVA ONLD 3.2   —    → HPP_St1_RND512 74, ONLD_St8.89_TG768 26
+
+── ventana 4 T, entrenamiento mixed (ventanas por simulación: 12–40) ──
+   prueba por bloques: total 0.642 | TG768 0.591 | RND512 0.673 | HPP/ONLD 512 0.617 | livianas 768 0.208
+   corrida nueva: 6 de 8 especies bien
+      NUEVA HPP 0.1    0.78 → HPP_St0.1_RND512 78, ONLD_St0.1_RND512 20
+      NUEVA HPP 0.6    0.75 → HPP_St0.6_RND512 75, ONLD_St3.2_TG768 25
+      NUEVA HPP 1      0.84 → HPP_St1_RND512 84, HPP_St0.6_RND512 16
+      NUEVA HPP 4      0.75 → HPP_St4_RND512 75, ONLD_St8.89_TG768 25
+      NUEVA ONLD 0.1   0.24 → HPP_St0.1_RND512 76, ONLD_St0.1_RND512 24
+      NUEVA ONLD 1     0.26 → HPP_St0.6_RND512 49, ONLD_St1_RND512 26
+      NUEVA ONLD 20    0.60 → ONLD_St20_RND512 60, ONLD_St8.89_TG768 25
+      NUEVA ONLD 100   1.00 → ONLD_St100_RND512 100
+      NUEVA ONLD 3.2   —    → ONLD_St8.89_TG768 69, HPP_St1_RND512 31
+
+── Resumen ──
+ventana entrenamiento  total  TG768 RND512 HPP/ONLD livianas  nueva
+   16.7 coherent       0.772  0.656  0.841    0.788    0.256   6/8
+   16.7 mixed          0.714  0.621  0.770    0.693    0.211   5/8
+      6 coherent       0.750  0.656  0.807    0.776    0.300   8/8
+      6 mixed          0.673  0.593  0.722    0.662    0.258   6/8
+      4 coherent       0.753  0.623  0.830    0.785    0.243   7/8
+      4 mixed          0.642  0.591  0.673    0.617    0.208   6/8

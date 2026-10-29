@@ -1,0 +1,12 @@
+# Corrida nueva RND512 (semilla 2207, /share/data4/msvidal/RND512_nuevas): solo para evaluar.
+# expected = clase de entrenamiento que debería asignarse (null: sin clase propia).
+# skip = salidas descartadas al principio (el flujo nuevo arranca casi igual al viejo).
+- {name: 'NUEVA HPP 0.1',  expected: 'HPP_St0.1_RND512',  skip: 50, flux: {forcing: 'RND', resolution: [512, 512, 512]}, parts: {model: 'HPP',  st: 0.1}, path: '/share/data4/msvidal/RND512_nuevas/outs_HPP_0-1/'}
+- {name: 'NUEVA HPP 0.6',  expected: 'HPP_St0.6_RND512',  skip: 50, flux: {forcing: 'RND', resolution: [512, 512, 512]}, parts: {model: 'HPP',  st: 0.6}, path: '/share/data4/msvidal/RND512_nuevas/outs_HPP_0-6/'}
+- {name: 'NUEVA HPP 1',    expected: 'HPP_St1_RND512',    skip: 50, flux: {forcing: 'RND', resolution: [512, 512, 512]}, parts: {model: 'HPP',  st: 1},   path: '/share/data4/msvidal/RND512_nuevas/outs_HPP_1/'}
+- {name: 'NUEVA HPP 4',    expected: 'HPP_St4_RND512',    skip: 50, flux: {forcing: 'RND', resolution: [512, 512, 512]}, parts: {model: 'HPP',  st: 4},   path: '/share/data4/msvidal/RND512_nuevas/outs_HPP_4/'}
+- {name: 'NUEVA ONLD 0.1', expected: 'ONLD_St0.1_RND512', skip: 50, flux: {forcing: 'RND', resolution: [512, 512, 512]}, parts: {model: 'ONLD', st: 0.1}, path: '/share/data4/msvidal/RND512_nuevas/outs_NLD_0-1/'}
+- {name: 'NUEVA ONLD 1',   expected: 'ONLD_St1_RND512',   skip: 50, flux: {forcing: 'RND', resolution: [512, 512, 512]}, parts: {model: 'ONLD', st: 1},   path: '/share/data4/msvidal/RND512_nuevas/outs_NLD_1/'}
+- {name: 'NUEVA ONLD 20',  expected: 'ONLD_St20_RND512',  skip: 50, flux: {forcing: 'RND', resolution: [512, 512, 512]}, parts: {model: 'ONLD', st: 20},  path: '/share/data4/msvidal/RND512_nuevas/outs_NLD_20/'}
+- {name: 'NUEVA ONLD 100', expected: 'ONLD_St100_RND512', skip: 50, flux: {forcing: 'RND', resolution: [512, 512, 512]}, parts: {model: 'ONLD', st: 100}, path: '/share/data4/msvidal/RND512_nuevas/outs_NLD_100/'}
+- {name: 'NUEVA ONLD 3.2', expected: null,                skip: 50, flux: {forcing: 'RND', resolution: [512, 512, 512]}, parts: {model: 'ONLD', st: 3.2}, path: '/share/data4/msvidal/RND512_nuevas/outs_ONLD_3-2/'}
