@@ -1,0 +1,58 @@
+18 especies de las corridas pareadas, salidas 3427-3701, pool 20000, muestras de 5000 partículas
+
+══ bloques de 6 T: 2 bloques, se prueba cada uno entrenando con los demás ══
+   clase exacta 0.417 | modelo (HPP/ONLD) bien 0.574 | St bien 0.547   (azar: clase 0.056, modelo 0.5)
+      St  HPP: modelo bien  ONLD: modelo bien   predicción más frecuente
+     0.1              0.25               1.00   HPP → ONLD_St0.2_RND512 0.50, HPP_St0.1_RND512 0.25 | ONLD → ONLD_St0.1_RND512 0.80, ONLD_St0.2_RND512 0.20
+     0.2              0.00               0.33   HPP → ONLD_St0.35_RND512 0.50, ONLD_St0.2_RND512 0.50 | ONLD → HPP_St0.1_RND512 0.50, ONLD_St0.2_RND512 0.33
+    0.35              0.00               0.03   HPP → ONLD_St0.6_RND512 0.50, ONLD_St0.35_RND512 0.50 | ONLD → HPP_St0.2_RND512 0.50, HPP_St0.35_RND512 0.47
+     0.6              0.05               0.50   HPP → ONLD_St1.4_RND512 0.50, ONLD_St0.6_RND512 0.45 | ONLD → HPP_St0.35_RND512 0.50, ONLD_St1_RND512 0.47
+       1              0.90               0.97   HPP → HPP_St1_RND512 0.90, ONLD_St1.4_RND512 0.10 | ONLD → ONLD_St1.4_RND512 0.50, ONLD_St0.6_RND512 0.40
+     1.4              0.50               0.57   HPP → ONLD_St4_RND512 0.50, HPP_St1.4_RND512 0.50 | ONLD → ONLD_St2_RND512 0.50, HPP_St0.6_RND512 0.42
+       2              1.00               1.00   HPP → HPP_St2_RND512 0.97, HPP_St1.4_RND512 0.03 | ONLD → ONLD_St1.4_RND512 0.50, ONLD_St2_RND512 0.35
+       4              1.00               0.23   HPP → HPP_St4_RND512 1.00 | ONLD → HPP_St1.4_RND512 0.50, HPP_St2_RND512 0.28
+      20              1.00               1.00   HPP → HPP_St20_RND512 1.00 | ONLD → ONLD_St20_RND512 1.00
+   otra realización del flujo (entrenado con todos los bloques; ventanas de 6 T de 009):
+      RND512 HPP 0.1  clase 0.39  modelo 0.39  → ONLD_St0.1_RND512 0.59, HPP_St0.1_RND512 0.39
+      RND512 HPP 0.6  clase 0.21  modelo 0.72  → HPP_St0.35_RND512 0.51, ONLD_St0.6_RND512 0.27
+      RND512 HPP 1    clase 0.35  modelo 0.71  → HPP_St1_RND512 0.35, HPP_St0.6_RND512 0.31
+      RND512 HPP 4    clase 0.79  modelo 0.99  → HPP_St4_RND512 0.79, HPP_St2_RND512 0.20
+      RND512 ONLD 0.1 clase 0.70  modelo 0.70  → ONLD_St0.1_RND512 0.70, HPP_St0.1_RND512 0.30
+      RND512 ONLD 1   clase 0.07  modelo 0.47  → HPP_St0.35_RND512 0.39, ONLD_St0.6_RND512 0.31
+      RND512 ONLD 20  clase 0.95  modelo 0.95  → ONLD_St20_RND512 0.95, HPP_St2_RND512 0.05
+      NUEVA HPP 0.1   clase 0.50  modelo 0.50  → ONLD_St0.1_RND512 0.50, HPP_St0.1_RND512 0.50
+      NUEVA HPP 0.6   clase 0.00  modelo 0.89  → HPP_St0.35_RND512 0.89, ONLD_St0.6_RND512 0.11
+      NUEVA HPP 1     clase 0.00  modelo 1.00  → HPP_St0.6_RND512 1.00
+      NUEVA HPP 4     clase 0.00  modelo 1.00  → HPP_St2_RND512 1.00
+      NUEVA ONLD 0.1  clase 0.50  modelo 0.50  → ONLD_St0.1_RND512 0.50, HPP_St0.1_RND512 0.50
+      NUEVA ONLD 1    clase 0.00  modelo 0.44  → HPP_St0.35_RND512 0.56, ONLD_St0.6_RND512 0.44
+      NUEVA ONLD 20   clase 0.50  modelo 0.50  → ONLD_St20_RND512 0.50, HPP_St2_RND512 0.50
+
+══ bloques de 4 T: 3 bloques, se prueba cada uno entrenando con los demás ══
+   clase exacta 0.592 | modelo (HPP/ONLD) bien 0.738 | St bien 0.675   (azar: clase 0.056, modelo 0.5)
+      St  HPP: modelo bien  ONLD: modelo bien   predicción más frecuente
+     0.1              0.97               0.63   HPP → HPP_St0.1_RND512 0.97, ONLD_St0.2_RND512 0.03 | ONLD → ONLD_St0.1_RND512 0.63, HPP_St0.1_RND512 0.37
+     0.2              0.10               0.45   HPP → ONLD_St0.2_RND512 0.58, ONLD_St0.35_RND512 0.32 | ONLD → HPP_St0.1_RND512 0.35, ONLD_St0.35_RND512 0.28
+    0.35              0.13               0.52   HPP → ONLD_St0.6_RND512 0.58, ONLD_St0.35_RND512 0.28 | ONLD → HPP_St0.2_RND512 0.45, ONLD_St0.35_RND512 0.30
+     0.6              0.67               0.67   HPP → HPP_St0.6_RND512 0.65, ONLD_St1.4_RND512 0.30 | ONLD → HPP_St0.35_RND512 0.33, ONLD_St0.6_RND512 0.28
+       1              0.67               0.98   HPP → HPP_St1_RND512 0.65, ONLD_St1.4_RND512 0.33 | ONLD → ONLD_St1.4_RND512 0.40, ONLD_St0.6_RND512 0.33
+     1.4              1.00               0.82   HPP → HPP_St1.4_RND512 0.98, HPP_St1_RND512 0.02 | ONLD → ONLD_St1.4_RND512 0.38, ONLD_St2_RND512 0.25
+       2              1.00               1.00   HPP → HPP_St2_RND512 0.95, HPP_St1.4_RND512 0.05 | ONLD → ONLD_St2_RND512 0.58, ONLD_St1.4_RND512 0.42
+       4              1.00               0.68   HPP → HPP_St4_RND512 1.00 | ONLD → ONLD_St4_RND512 0.67, HPP_St1.4_RND512 0.32
+      20              1.00               1.00   HPP → HPP_St20_RND512 1.00 | ONLD → ONLD_St20_RND512 1.00
+   otra realización del flujo (entrenado con todos los bloques; ventanas de 4 T de 009):
+      RND512 HPP 0.1  clase 0.25  modelo 0.25  → ONLD_St0.1_RND512 0.69, HPP_St0.1_RND512 0.25
+      RND512 HPP 0.6  clase 0.32  modelo 0.84  → HPP_St0.35_RND512 0.47, HPP_St0.6_RND512 0.32
+      RND512 HPP 1    clase 0.56  modelo 0.94  → HPP_St1_RND512 0.56, HPP_St0.6_RND512 0.32
+      RND512 HPP 4    clase 0.62  modelo 0.86  → HPP_St4_RND512 0.62, HPP_St2_RND512 0.24
+      RND512 ONLD 0.1 clase 0.78  modelo 0.78  → ONLD_St0.1_RND512 0.78, HPP_St0.1_RND512 0.22
+      RND512 ONLD 1   clase 0.09  modelo 0.42  → HPP_St0.35_RND512 0.34, ONLD_St0.6_RND512 0.27
+      RND512 ONLD 20  clase 0.91  modelo 0.91  → ONLD_St20_RND512 0.91, HPP_St2_RND512 0.07
+      NUEVA HPP 0.1   clase 0.46  modelo 0.46  → ONLD_St0.1_RND512 0.53, HPP_St0.1_RND512 0.46
+      NUEVA HPP 0.6   clase 0.17  modelo 0.71  → HPP_St0.35_RND512 0.54, ONLD_St0.6_RND512 0.29
+      NUEVA HPP 1     clase 0.44  modelo 0.98  → HPP_St0.6_RND512 0.54, HPP_St1_RND512 0.44
+      NUEVA HPP 4     clase 0.34  modelo 1.00  → HPP_St2_RND512 0.66, HPP_St4_RND512 0.34
+      NUEVA ONLD 0.1  clase 0.55  modelo 0.55  → ONLD_St0.1_RND512 0.55, HPP_St0.1_RND512 0.45
+      NUEVA ONLD 1    clase 0.00  modelo 0.03  → HPP_St0.35_RND512 0.50, HPP_St0.6_RND512 0.47
+      NUEVA ONLD 20   clase 0.75  modelo 0.75  → ONLD_St20_RND512 0.75, HPP_St2_RND512 0.25
+

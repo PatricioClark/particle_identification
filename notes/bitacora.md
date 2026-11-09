@@ -546,6 +546,56 @@ Son 9 Stokes con los dos modelos. Las especies que ya existían continúan con s
 
 ---
 
+## 2026-11-01 — Corridas pareadas: segundo y tercer job, cadena automática
+
+**Segundo job** (12241 y 12242, 40 procesos y 23.5 h para que la cola los adelante): arrancó el 29/10 a las ~01:00 y se cortó por tiempo el 30/10, sin errores. A llegó a t = 111.59 y B a t = 111.26, con el flujo idéntico. Ritmo: ~5 salidas por hora, o sea ~115 salidas (~6.5 T) por job.
+
+**Cosas que aprendimos en el camino:**
+
+- **GHOST tiene un tope de pasos** (`step = 80001` en `parameter.inp`): desde el estado 145 eso cortaba la corrida en el estado 161 (~22 T). Lo subimos a 400001; no cambia la física.
+- **El reinicio no es exacto**: el estado se guarda en precisión simple, así que el flujo que sigue después de reiniciar se separa del que había calculado el job anterior pasado ese punto (3% de diferencia en la energía al cabo de 1 de tiempo). A y B igual siguen idénticos entre sí, porque reinician del mismo archivo. Consecuencia: el `balance.txt` acumula filas "huérfanas" del job anterior; para cada tiempo vale la última fila escrita. Los archivos de partículas y espectros se sobreescriben, así que esos quedan bien.
+- **`a1` y `a2` dan el flujo idéntico bit a bit** (GHOST arma las FFT con `FFTW_ESTIMATE`, que es determinista). En el tercer job B corrió en `a2` porque `a1` no tenía lugar, y el flujo dio igual al de A. Ahora los `run.sh` aceptan cualquiera de los dos nodos.
+
+**Cadena automática** (`encadenar.sh`): un trabajo de 1 proceso que queda en cola esperando a que terminen A y B, chequea que hayan terminado por tiempo y sin errores y que el flujo siga idéntico, busca el último estado completo común, cambia `stat` en los dos `parameter.inp` y manda el job siguiente. La primera vez falló porque en este cluster `sacct` (el registro de trabajos) está desactivado, y como no pudo confirmar cómo terminaron no mandó nada: se perdieron ~2.5 días. Ahora revisa el log del job. **Tercer job** (12747 y 12748) desde el estado 149, mandado a mano; quedan 2 jobs más en la cadena para llegar a ~38 T.
+
+---
+
+## 2026-11-02 al 04 — Corridas pareadas: paso a `sakura` y fin por inestabilidad
+
+**Cola trabada:** el tercer job terminó bien (estado común 153, ~25 T) y el encadenador mandó el cuarto, pero quedó en cola hasta el 4/11: `a2` la tomó otro usuario por 2 días y `a1` estaba apartada para trabajos anteriores (en este cluster todos tienen la misma prioridad, así que es por orden de llegada). Bajar las horas pedidas (hasta 6 h) o los procesos (24) no cambió la estimación.
+
+**`sakura`:** prueba de 20 min (`prueba_sakura/`): GHOST anda en ese procesador (Intel), con 32 procesos va ~1.5 veces más rápido que `a1` con 40, y A = B idénticos. Slurm asigna un núcleo físico entero por proceso, así que entran 32 procesos en total: A y B corrieron juntas con 16 cada una (~4.4 T por job de 23.5 h). La versión de `run.sh` para `a1`/`a2` quedó en `run_a1a2.sh`.
+
+**Inestabilidad numérica:** el 4/11 a las ~07:45, en t = 118.1, el flujo llegó a la energía más alta de todas las corridas (⟨v²⟩ = 1.80; en las originales el máximo era 1.63) y con el paso de tiempo fijo `dt = 1.5e-3` el esquema se volvió inestable: ⟨ω²⟩ pasó de 122 a 137 en 0.07 de tiempo, GHOST perdió las partículas y abortó (A y B igual, porque tienen el mismo flujo). El encadenador detectó el error y no mandó nada. **El último estado sano es el 158 (t = 117.75): ~31 T de flujo compartido, salidas válidas hasta la 3926** (las 3927–3938 son del tramo que explotó). Si hiciera falta seguir: reiniciar desde el 158 con `mult = 2` en `parameter.inp` (divide `dt` por 2 y multiplica los pasos entre salidas, así que las salidas y el forzado quedan alineados), a mitad de velocidad. Por ahora paramos: alcanzan para analizar.
+
+---
+
+## 2026-11-04 — ¿HPP y ONLD con el mismo Stokes se distinguen? (experimento 010)
+
+**Qué hice** (`runs/010`): las 18 especies de las corridas pareadas (9 Stokes × HPP/ONLD, todas en el mismo flujo), salidas 3427–3926 (descartando 50 de transitorio): ~28 T útiles. Mismas estadísticas por partícula que 009 (`pares_dataset.py`), con escalas L/U de cada bloque. Los bloques de tiempo son las ventanas mismas: 6 bloques de 4 T o 4 de 6 T, los mismos tiempos para todas las clases. Ejemplos de 5000 partículas de un solo bloque. Entrenar dejando un bloque afuera y probar en él (`train_pares.py`).
+
+**Partículas distintas para entrenar y probar.** En el preliminar (hasta el estado 149, `train_pares.log`) entrenamiento y prueba usaban las mismas 20000 partículas, en momentos distintos. Con dos grupos separados de 20000 (`--disjoint`, `train_pares_disjoint.log`) el acierto bajó poco (59% → 57%), pero sobre todo donde era sospechoso: HPP 0.1 pasó de 97% a 52% (a Stokes 0.1 HPP y ONLD son casi iguales). Desde acá siempre con grupos separados, como con datos de un experimento.
+
+**Resultado final** (`train_pares_final.log`, bloques de 4 T):
+
+| features | entrenamiento | clase exacta | modelo (HPP/ONLD) | Stokes |
+|---|---|---|---|---|
+| todas | resto de los bloques | 67% | 79% | 75% |
+| **todas** | **sin los bloques vecinos** | **60%** | **78%** | **65%** |
+| sin aceleración | sin los bloques vecinos | 56% | 73% | 61% |
+
+(azar: 6% y 50%). Con bloques de 6 T da peor (45–60%): hay solo 4 bloques. Pesa más cuántos momentos distintos del flujo se ven al entrenar que el largo de la ventana.
+
+**Conclusiones:**
+
+- **HPP y ONLD se separan bien desde Stokes ≈ 1** (82–100%), regular entre 0.2 y 0.6, y casi nada a 0.1 (físicamente casi iguales). El error típico: una ONLD se parece a una HPP de Stokes un poco menor, porque el arrastre no lineal la frena más.
+- **Los bloques vecinos inflaban** la clase exacta ~6 puntos, pero casi nada el modelo (79% → 78%).
+- **La aceleración aporta** (4–5 puntos, y más en otras realizaciones del flujo): conviene calibrarla, no sacarla.
+- **Stokes real.** Las etiquetas de 512 usan τ = St × 0.09416, pero τ_η cambia con el flujo: el factor St real / St etiqueta va de 0.67 a 0.99 entre bloques de las pareadas, es ~0.80 en las originales y 0.62 en RND512_nuevas. Dentro de las pareadas el acierto por bloque no sigue ese factor. Entre realizaciones sí: en RND512_nuevas las HPP salen con el modelo bien pero un Stokes más abajo (HPP 1 → "0.6", HPP 4 → "2"), que es lo que corresponde a su Stokes real menor.
+- **Otra realización del flujo:** el modelo sale bien en HPP 0.6, 1 y 4 y en ONLD 0.1 y 20. **Reconoce la física, no la simulación.** La excepción es la **ONLD 1**, que en las otras realizaciones sale "HPP 0.35–0.6" aunque en las pareadas se reconoce (90%). Explicación probable (no verificada): la corrección no lineal depende del Reynolds de la partícula, o sea de la intensidad del flujo; en un flujo menos energético la ONLD es menos "no lineal" y se parece más a una HPP. Una ONLD no queda definida solo por su Stokes.
+
+---
+
 ## Dónde estamos y próximos pasos
 
 **Hecho:**
@@ -567,14 +617,15 @@ Son 9 Stokes con los dos modelos. Las especies que ya existían continúan con s
 - ✅ Dataset por tramo (008): el acierto honesto es ~60%; robusto para flujo, inercia y término Du/Dt; frágil para trazadores/MR livianas y HPP/ONLD a Stokes bajo.
 - ✅ Resumen para la reunión con Patricio (pestaña "Resumen para la reunión" del documento).
 - ✅ Largo del tramo y entrenamiento mezclado (009): tramo de 6 T, entrenamiento con muestras de un solo tramo, acierto honesto ~75%.
-- ✅ Corridas pareadas HPP/ONLD en 512 (A y B, 9 Stokes con los dos modelos): primer job hecho, segundo en cola.
+- ✅ Corridas pareadas HPP/ONLD en 512 (A y B, 9 Stokes con los dos modelos): ~31 T de flujo compartido (hasta el estado 158; después el flujo se volvió inestable).
+- ✅ Análisis de las pareadas (010): HPP y ONLD se separan bien desde Stokes ≈ 1; acierto honesto ~60% en la clase y ~78% en el modelo; en otra realización del flujo reconoce la física, con el Stokes corrido según el Stokes real.
 
 **Lo que falta, en orden:**
 
-1. **Terminar las corridas pareadas** (~3 jobs en total) y analizarlas con tramos de 6 T: ¿HPP y ONLD con el mismo Stokes se distinguen, y desde qué Stokes?
+1. **Etiquetas con el Stokes real** (τ/τ_η del flujo) en vez del nominal, y ver si la ONLD necesita un segundo parámetro (Reynolds de la partícula).
 2. **Datos "tipo experimento"**: menos partículas por muestra, trayectorias más cortas, ruido en las posiciones. Depende de cómo sean los datos del experimento (pregunta 10).
 3. **Calibrar la aceleración** al mismo t* en los dos flujos (aporta, así que conviene arreglarla y no sacarla).
-4. Si Patricio está de acuerdo: **forzado aleatorio congelado** (~2 días) y **Taylor-Green 512 pareado** (~4 días).
+4. **Más momentos o realizaciones independientes del flujo** para entrenar (en 010 pesó más eso que el largo de la ventana). Si Patricio está de acuerdo: **forzado aleatorio congelado** (~2 días) y **Taylor-Green 512 pareado** (~4 días).
 5. Más adelante: **cuántos lags usar** y si hacen falta features nuevas para separar las clases livianas de 768.
 
 **En paralelo:** mandarle a Patricio las preguntas de abajo. Las más importantes son la 1 (los trazadores 512), la 3 (confirmar L/U) y la 5 (si incluimos las BB).

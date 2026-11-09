@@ -17,6 +17,7 @@
 - 007: lags en el t* exacto, interpolando entre salidas (`features.py`, `--interp-lags`); evaluación de la corrida nueva de RND512 con otra semilla (`eval_new_run.py`) y control con tramos de la corrida original
 - 008: dataset con muestras por tramo (todas las partículas en un mismo tramo de 16.7 T, escalas del tramo) y validación separando por tramos (`tramos_dataset.py`, `tramos_train.py`)
 - 009: estadísticas por partícula y por ventana (`moments_dataset.py`) para comparar largo de tramo (16.7, 6, 4 T) y entrenamiento con muestras de un tramo o mezcladas, validando por momento del flujo (`train_schemes.py`)
+- 010: corridas pareadas HPP/ONLD de 512 (mismo flujo, 9 Stokes): estadísticas por partícula en bloques de 4 y 6 T (`pares_dataset.py`, con partículas distintas para entrenar y probar) y clasificador dejando un bloque afuera, con y sin bloques vecinos y aceleración, más prueba en otras realizaciones del flujo (`train_pares.py`)
 
 
 ## GHOST

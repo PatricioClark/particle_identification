@@ -1,0 +1,23 @@
+# Corridas pareadas RND512 (/share/data4/msvidal/RND512_pares): HPP y ONLD con los mismos Stokes en el mismo
+# flujo (A y B idénticos bit a bit), reiniciadas desde el estado 0136 de RND512_nuevas (semilla 2207).
+# Stokes con la convención de las etiquetas de 512 (tau = St * 0.09416).
+# skip = 50 salidas (~2.8 T): transitorio de las partículas, que en el primer job se inicializaron copiando la
+# especie de RND512_nuevas con el tau más cercano (la peor: HPP 20, copiada de ONLD 20, relaja en ~3.5 T).
+- {name: 'A HPP 0.1', skip: 50, flux: {forcing: 'RND', resolution: [512, 512, 512]}, parts: {model: 'HPP', st: 0.1}, path: '/share/data4/msvidal/RND512_pares/A/outs_HPP_0-1/'}
+- {name: 'A HPP 0.2', skip: 50, flux: {forcing: 'RND', resolution: [512, 512, 512]}, parts: {model: 'HPP', st: 0.2}, path: '/share/data4/msvidal/RND512_pares/A/outs_HPP_0-2/'}
+- {name: 'A HPP 0.35', skip: 50, flux: {forcing: 'RND', resolution: [512, 512, 512]}, parts: {model: 'HPP', st: 0.35}, path: '/share/data4/msvidal/RND512_pares/A/outs_HPP_0-35/'}
+- {name: 'A HPP 0.6', skip: 50, flux: {forcing: 'RND', resolution: [512, 512, 512]}, parts: {model: 'HPP', st: 0.6}, path: '/share/data4/msvidal/RND512_pares/A/outs_HPP_0-6/'}
+- {name: 'A HPP 1.4', skip: 50, flux: {forcing: 'RND', resolution: [512, 512, 512]}, parts: {model: 'HPP', st: 1.4}, path: '/share/data4/msvidal/RND512_pares/A/outs_HPP_1-4/'}
+- {name: 'A ONLD 0.1', skip: 50, flux: {forcing: 'RND', resolution: [512, 512, 512]}, parts: {model: 'ONLD', st: 0.1}, path: '/share/data4/msvidal/RND512_pares/A/outs_ONLD_0-1/'}
+- {name: 'A ONLD 0.2', skip: 50, flux: {forcing: 'RND', resolution: [512, 512, 512]}, parts: {model: 'ONLD', st: 0.2}, path: '/share/data4/msvidal/RND512_pares/A/outs_ONLD_0-2/'}
+- {name: 'A ONLD 0.35', skip: 50, flux: {forcing: 'RND', resolution: [512, 512, 512]}, parts: {model: 'ONLD', st: 0.35}, path: '/share/data4/msvidal/RND512_pares/A/outs_ONLD_0-35/'}
+- {name: 'A ONLD 0.6', skip: 50, flux: {forcing: 'RND', resolution: [512, 512, 512]}, parts: {model: 'ONLD', st: 0.6}, path: '/share/data4/msvidal/RND512_pares/A/outs_ONLD_0-6/'}
+- {name: 'B HPP 1', skip: 50, flux: {forcing: 'RND', resolution: [512, 512, 512]}, parts: {model: 'HPP', st: 1}, path: '/share/data4/msvidal/RND512_pares/B/outs_HPP_1/'}
+- {name: 'B HPP 2', skip: 50, flux: {forcing: 'RND', resolution: [512, 512, 512]}, parts: {model: 'HPP', st: 2}, path: '/share/data4/msvidal/RND512_pares/B/outs_HPP_2/'}
+- {name: 'B HPP 4', skip: 50, flux: {forcing: 'RND', resolution: [512, 512, 512]}, parts: {model: 'HPP', st: 4}, path: '/share/data4/msvidal/RND512_pares/B/outs_HPP_4/'}
+- {name: 'B HPP 20', skip: 50, flux: {forcing: 'RND', resolution: [512, 512, 512]}, parts: {model: 'HPP', st: 20}, path: '/share/data4/msvidal/RND512_pares/B/outs_HPP_20/'}
+- {name: 'B ONLD 1', skip: 50, flux: {forcing: 'RND', resolution: [512, 512, 512]}, parts: {model: 'ONLD', st: 1}, path: '/share/data4/msvidal/RND512_pares/B/outs_ONLD_1/'}
+- {name: 'B ONLD 1.4', skip: 50, flux: {forcing: 'RND', resolution: [512, 512, 512]}, parts: {model: 'ONLD', st: 1.4}, path: '/share/data4/msvidal/RND512_pares/B/outs_ONLD_1-4/'}
+- {name: 'B ONLD 2', skip: 50, flux: {forcing: 'RND', resolution: [512, 512, 512]}, parts: {model: 'ONLD', st: 2}, path: '/share/data4/msvidal/RND512_pares/B/outs_ONLD_2/'}
+- {name: 'B ONLD 4', skip: 50, flux: {forcing: 'RND', resolution: [512, 512, 512]}, parts: {model: 'ONLD', st: 4}, path: '/share/data4/msvidal/RND512_pares/B/outs_ONLD_4/'}
+- {name: 'B ONLD 20', skip: 50, flux: {forcing: 'RND', resolution: [512, 512, 512]}, parts: {model: 'ONLD', st: 20}, path: '/share/data4/msvidal/RND512_pares/B/outs_ONLD_20/'}
