@@ -18,6 +18,7 @@
 - 008: dataset con muestras por tramo (todas las partículas en un mismo tramo de 16.7 T, escalas del tramo) y validación separando por tramos (`tramos_dataset.py`, `tramos_train.py`)
 - 009: estadísticas por partícula y por ventana (`moments_dataset.py`) para comparar largo de tramo (16.7, 6, 4 T) y entrenamiento con muestras de un tramo o mezcladas, validando por momento del flujo (`train_schemes.py`)
 - 010: corridas pareadas HPP/ONLD de 512 (mismo flujo, 9 Stokes): estadísticas por partícula en bloques de 4 y 6 T (`pares_dataset.py`, con partículas distintas para entrenar y probar) y clasificador dejando un bloque afuera, con y sin bloques vecinos y aceleración, más prueba en otras realizaciones del flujo (`train_pares.py`)
+- 011: por qué falla la ONLD 1 (factor de arrastre no lineal medido con `vip` − `vlg`, `slip_onld.py`) y qué Stokes ve el clasificador (regresión con Stokes nominal, real por bloque, real promedio de la corrida y τ/T, `stokes_real.py`)
 
 
 ## GHOST

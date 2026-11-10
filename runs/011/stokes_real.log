@@ -1,0 +1,29 @@
+Stokes / etiqueta promedio en las pareadas: nominal 1.00, real 0.85, real_run 0.83, T 0.18
+Stokes / etiqueta promedio en bespanol: nominal 1.00, real 0.80, real_run 0.79, T 0.18
+Stokes / etiqueta promedio en nueva: nominal 1.00, real 0.62, real_run 0.62, T 0.14
+
+Pareadas, dejando un bloque afuera sin vecinos: error de log10(St predicho / St verdadero)
+   nominal  sesgo +0.004  error típico 0.111  (factor típico 1.29)
+   real     sesgo +0.004  error típico 0.190  (factor típico 1.55)
+   real_run sesgo +0.004  error típico 0.115  (factor típico 1.30)
+   T        sesgo +0.002  error típico 0.157  (factor típico 1.43)
+
+Otras corridas (entrenado con todas las pareadas): mediana de St predicho / St verdadero
+   corrida   especie      nominal      real  real_run         T    (St verdadero: nominal, real, real_run, T)
+   bespanol  HPP 0.1         1.00      1.14      1.06      1.09    (0.10, 0.08, 0.08, 0.02)
+   bespanol  HPP 0.6         0.70      0.72      0.75      0.73    (0.60, 0.47, 0.47, 0.11)
+   bespanol  HPP 1           0.71      0.74      0.75      0.73    (1.00, 0.78, 0.79, 0.18)
+   bespanol  HPP 4           0.88      0.85      0.97      0.85    (4.00, 3.12, 3.14, 0.71)
+   bespanol  ONLD 0.1        1.00      1.25      1.07      1.19    (0.10, 0.08, 0.08, 0.02)
+   bespanol  ONLD 1          0.63      0.69      0.68      0.66    (1.00, 0.78, 0.79, 0.18)
+   bespanol  ONLD 20         1.00      0.99      1.06      1.00    (20.00, 15.60, 15.71, 3.54)
+   nueva     HPP 0.1         1.02      1.46      1.38      1.33    (0.10, 0.06, 0.06, 0.01)
+   nueva     HPP 0.6         0.63      0.85      0.86      0.78    (0.60, 0.37, 0.37, 0.09)
+   nueva     HPP 1           0.67      0.86      0.89      0.82    (1.00, 0.61, 0.62, 0.15)
+   nueva     HPP 4           0.75      0.95      1.02      0.89    (4.00, 2.45, 2.46, 0.58)
+   nueva     ONLD 0.1        1.15      1.67      1.53      1.55    (0.10, 0.06, 0.06, 0.01)
+   nueva     ONLD 1          0.58      0.72      0.83      0.73    (1.00, 0.61, 0.62, 0.15)
+   nueva     ONLD 20         0.56      1.11      0.73      0.79    (20.00, 12.24, 12.30, 2.90)
+   promedio (geométrico) por corrida, sin las de Stokes 0.1:
+   bespanol                  0.77      0.79      0.83      0.78
+   nueva                     0.63      0.89      0.86      0.80

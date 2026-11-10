@@ -1,0 +1,4 @@
+Traceback (most recent call last):
+  File "/home/msvidal/particle_id_copy/runs/011/slip_onld.py", line 27, in <module>
+    import numpy as np
+ModuleNotFoundError: No module named 'numpy'

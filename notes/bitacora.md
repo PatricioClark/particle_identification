@@ -596,6 +596,36 @@ Son 9 Stokes con los dos modelos. Las especies que ya existían continúan con s
 
 ---
 
+## 2026-11-10 — ¿Por qué falla la ONLD 1? ¿Qué Stokes ve el clasificador? (experimento 011)
+
+**Aclaración sobre "otras realizaciones del flujo" (010).** Bespanol, la corrida nueva y las pareadas son una misma cadena (cada una arranca donde terminó la anterior; la nueva y las pareadas con la semilla 2207). Bespanol está lejos en el tiempo (~20 T antes de los datos de las pareadas), pero el final de la corrida nueva está a ~2 T del primer bloque de las pareadas y comparte las mismas partículas. Son otros momentos del flujo con otra energía, no flujos independientes.
+
+**1. ONLD 1** (`runs/011/slip_onld.py`, `slip_onld.log`). GHOST usa el arrastre de Wang & Maxey: la fuerza se multiplica por c = 1 + 0.15 Re_p^0.687, con Re_p proporcional a la velocidad relativa partícula–fluido (`vip` − `vlg`). Lo calculé para cada ONLD en las tres corridas (20000 partículas, 40 salidas por corrida). La partícula responde como con un Stokes efectivo = Stokes real / ⟨c⟩.
+
+| ONLD 1 en… | ⟨v²⟩ | ⟨c⟩ | Stokes real | Stokes efectivo |
+|---|---|---|---|---|
+| pareadas | 1.27 | 1.39 | 0.85 | 0.61 |
+| bespanol | 0.97 | 1.36 | 0.78 | 0.57 |
+| corrida nueva | 0.74 | 1.30 | 0.62 | 0.47 |
+
+**La hipótesis de 010 no se confirma:** la no linealidad casi no cambia entre flujos (⟨c⟩ 1.30–1.39); lo que cambia es el Stokes real. La ONLD 1 de la corrida nueva (Stokes efectivo 0.47) se mueve como la HPP 0.6 de las pareadas (Stokes real 0.51): es el mismo corrimiento por Stokes real de las HPP, en una zona con muchas clases vecinas. El Stokes efectivo también explica las confusiones dentro de las pareadas (ONLD 4: 1.64 ≈ HPP 2: 1.70). No hace falta un segundo parámetro para las ONLD en este rango de flujos (en principio c − 1 crece con U^0.69, pero acá el efecto es chico).
+
+**2. ¿Qué Stokes ve el clasificador?** (`runs/011/stokes_real.py`, `stokes_real.log`). Regresión del log del Stokes con las mismas features (muestras de 5000 partículas en ventanas de 4 T, escalas L/U de la ventana), un regresor por modelo, con cuatro definiciones del Stokes. Dentro de las pareadas: dejando un bloque afuera sin vecinos. Otras corridas: entrenado con todas las pareadas, mediana de predicho / verdadero (sin las de Stokes 0.1).
+
+| definición | error en las pareadas | bespanol | corrida nueva |
+|---|---|---|---|
+| nominal (etiqueta) | factor 1.29 | 0.77 | 0.63 |
+| real, τ_η de cada bloque | factor 1.55 | 0.79 | 0.89 |
+| **real, τ_η promedio de la corrida** | **factor 1.30** | **0.83** | **0.86** |
+| τ/T | factor 1.43 | 0.78 | 0.80 |
+
+- Entre corridas, el Stokes real corrige casi todo el corrimiento (corrida nueva: 0.63 → ~0.87; HPP 4: 0.75 → 1.02).
+- Pero dentro de una corrida, el τ_η de cada bloque empeora: las features no siguen las fluctuaciones de la disipación de bloque a bloque.
+- **Lo mejor: Stokes real con el τ_η promedio de cada corrida** (para un experimento: medir su disipación media).
+- Queda ~15% de subestimación sin explicar (sobre todo HPP 0.6 y 1 de bespanol, ~0.75); quizás porque bespanol recorre estados del flujo muy distintos de los de las pareadas (⟨v²⟩ 0.57–1.63). A Stokes 0.1 el Stokes no se puede medir (las partículas son casi trazadores).
+
+---
+
 ## Dónde estamos y próximos pasos
 
 **Hecho:**
@@ -618,11 +648,12 @@ Son 9 Stokes con los dos modelos. Las especies que ya existían continúan con s
 - ✅ Resumen para la reunión con Patricio (pestaña "Resumen para la reunión" del documento).
 - ✅ Largo del tramo y entrenamiento mezclado (009): tramo de 6 T, entrenamiento con muestras de un solo tramo, acierto honesto ~75%.
 - ✅ Corridas pareadas HPP/ONLD en 512 (A y B, 9 Stokes con los dos modelos): ~31 T de flujo compartido (hasta el estado 158; después el flujo se volvió inestable).
-- ✅ Análisis de las pareadas (010): HPP y ONLD se separan bien desde Stokes ≈ 1; acierto honesto ~60% en la clase y ~78% en el modelo; en otra realización del flujo reconoce la física, con el Stokes corrido según el Stokes real.
+- ✅ Análisis de las pareadas (010): HPP y ONLD se separan bien desde Stokes ≈ 1; acierto honesto ~60% en la clase y ~78% en el modelo; en otros momentos del flujo reconoce la física, con el Stokes corrido según el Stokes real.
+- ✅ ONLD 1 y Stokes real (011): la ONLD 1 falla por su Stokes real, no por la no linealidad; el clasificador ve el Stokes real con el τ_η promedio de cada flujo.
 
 **Lo que falta, en orden:**
 
-1. **Etiquetas con el Stokes real** (τ/τ_η del flujo) en vez del nominal, y ver si la ONLD necesita un segundo parámetro (Reynolds de la partícula).
+1. **Etiquetas con el Stokes real** (τ / ⟨τ_η⟩ de cada flujo) en vez del nominal, y rehacer la clasificación con ellas.
 2. **Datos "tipo experimento"**: menos partículas por muestra, trayectorias más cortas, ruido en las posiciones. Depende de cómo sean los datos del experimento (pregunta 10).
 3. **Calibrar la aceleración** al mismo t* en los dos flujos (aporta, así que conviene arreglarla y no sacarla).
 4. **Más momentos o realizaciones independientes del flujo** para entrenar (en 010 pesó más eso que el largo de la ventana). Si Patricio está de acuerdo: **forzado aleatorio congelado** (~2 días) y **Taylor-Green 512 pareado** (~4 días).
